@@ -12,3 +12,15 @@ desktop.ini
 
 # Backup database lokal (jangan di-commit)
 *.sql
+# ...kecuali skema + seed resmi proyek
+!database/db_petopia.sql
+
+# Konfigurasi & tooling AI agent — cukup di lokal, jangan di-push
+AGENTS.md
+.agents/
+skills-lock.json
+.opencode/
+opencode.json
+CLAUDE.md
+.cursor/
+.github/copilot-instructions.md
