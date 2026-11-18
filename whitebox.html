@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whitebox Testing — Petopia</title>
+<style>
+  :root{
+    --green:#405d4d; --green-dark:#2c4236; --green-soft:#e6efe9;
+    --bg:#e9ecef; --card:#fff; --ink:#17201c; --muted:#6d7a73;
+    --line:#dde3df; --amber:#8a5a12; --amber-soft:#fff7e6;
+    --red:#a03d3d; --red-soft:#fdeeee; --blue:#2f4a7a; --blue-soft:#e6f0ff;
+    --radius:20px; --shadow:0 10px 30px rgba(64,93,77,.10);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:Inter,"Segoe UI",system-ui,-apple-system,sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--green)}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+  .wrap{max-width:1440px;margin:0 auto;padding:0 20px}
+
+  /* ---------- topbar ---------- */
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar .wrap{display:flex;align-items:center;gap:18px;padding-top:12px;padding-bottom:12px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px;min-width:250px}
+  .brandmark{width:42px;height:42px;border-radius:14px;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:800;font-family:Outfit,Inter,sans-serif;font-size:18px;box-shadow:0 8px 18px rgba(64,93,77,.25)}
+  .brand h1{font-size:15px;margin:0;font-weight:800;letter-spacing:-.01em}
+  .brand .sub{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+  .hstats{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+  .hstat{background:var(--green-soft);border:1px solid #d6e6db;color:var(--green);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700}
+  .hstat.red{background:var(--red-soft);border-color:#f5c6c6;color:var(--red)}
+  .hstat.gray{background:#f3f5f4;border-color:var(--line);color:var(--muted)}
+  .topactions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s;font-family:inherit}
+  .btn:hover{border-color:var(--green);color:var(--green)}
+  .btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+  .btn.primary:hover{background:var(--green-dark);color:#fff}
+  .btn.ghost{background:transparent}
+  .progress{height:6px;background:#dfe5e1;border-radius:99px;overflow:hidden;flex:1;min-width:160px}
+  .topbar .progress{flex:0 1 300px}
+  .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5d7f6c,var(--green));border-radius:99px;transition:width .25s}
+
+  /* ---------- layout ---------- */
+  .layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:22px;align-items:start;padding:24px 0 40px}
+  aside.sidenav{position:sticky;top:82px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+  .sidenav .label{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;padding:4px 8px 8px}
+  .navitem{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;color:#3d4a43;text-decoration:none;font-size:12.5px;font-weight:600}
+  .navitem:hover{background:var(--green-soft);color:var(--green)}
+  .navitem .dot{width:7px;height:7px;border-radius:50%;background:#cfd6d2;flex:none}
+  .navitem .dot.done{background:var(--green)}
+  .navitem .dot.fail{background:var(--red)}
+  .navitem .cnt{margin-left:auto;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .navmeta{margin-top:12px;padding:10px;border-top:1px dashed var(--line);font-size:11px;color:var(--muted);line-height:1.5}
+
+  main{min-width:0;display:flex;flex-direction:column;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .hero{padding:24px 26px;display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;background:
+      radial-gradient(900px 200px at 100% 0%,rgba(64,93,77,.10),transparent 70%), #fff}
+  .hero-main{flex:1 1 460px;min-width:280px}
+  .eyebrow{display:inline-flex;align-items:center;gap:6px;background:var(--green-soft);border:1px solid #d6e6db;color:var(--green);border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .hero h2{font-family:Outfit,Inter,sans-serif;font-size:26px;line-height:1.1;letter-spacing:-.03em;margin:12px 0 8px}
+  .hero p{margin:0;color:var(--muted);max-width:70ch}
+  .hero-side{flex:0 1 300px;min-width:240px;display:flex;flex-direction:column;gap:10px}
+  .gauge{background:#f7f9f8;border:1px solid var(--line);border-radius:16px;padding:14px}
+  .gauge .num{font-family:Outfit,Inter,sans-serif;font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em}
+  .gauge .cap{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{font-size:11px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 9px;color:var(--muted);font-weight:700}
+  .chip b{color:var(--ink)}
+
+  .notice{padding:14px 18px;border-left:4px solid var(--green);background:var(--green-soft);border-radius:12px;font-size:12.5px;color:#31463b}
+  .notice b{font-weight:800}
+  .notice ul{margin:6px 0 0;padding-left:18px}
+  .notice li{margin:2px 0}
+
+  .env{padding:18px 22px}
+  .env h3,.map h3{margin:0 0 10px;font-size:14px;font-family:Outfit,Inter,sans-serif;letter-spacing:.01em}
+  .env-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  .env-item{background:#f7f9f8;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:12px;color:#3b4a42}
+  .env-item b{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  .env-item code{background:#eef2f0;border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:11.5px}
+
+  .toolbar{padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:68px;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-radius:16px}
+  .search{flex:1 1 260px;display:flex;align-items:center;gap:8px;background:#f4f7f5;border:1px solid var(--line);border-radius:999px;padding:8px 14px}
+  .search input{border:0;background:transparent;outline:none;width:100%;font:inherit;font-size:12.5px;color:var(--ink)}
+  .filters{display:flex;gap:6px;flex-wrap:wrap}
+  .filter{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit}
+  .filter.active{background:var(--green);border-color:var(--green);color:#fff}
+  .filter .n{font-weight:800;margin-left:4px;opacity:.8}
+
+  .module{padding:18px 20px 8px;scroll-margin-top:130px;overflow-x:auto}
+  .module-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .module-head h3{margin:0;font-family:Outfit,Inter,sans-serif;font-size:17px;letter-spacing:-.01em}
+  .module-head .file{font-size:11.5px;color:var(--muted);font-weight:600}
+  .module-head .mprog{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);font-weight:700;min-width:180px}
+  .module-head .mprog .progress{min-width:90px}
+  .case-head,.case{display:grid;grid-template-columns:82px minmax(180px,1.25fr) minmax(150px,1fr) minmax(140px,.95fr) minmax(150px,1fr) 152px;gap:12px;padding:11px 12px;border-top:1px solid #eef1ef;align-items:start}
+  .case-head{border-top:1px dashed var(--line);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800;padding-bottom:6px}
+  .case:hover{background:#fafcfb}
+  .case .id{font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:700;color:var(--green);background:var(--green-soft);border:1px solid #d6e6db;border-radius:999px;padding:3px 7px;display:inline-block;white-space:nowrap}
+  .case .name{font-weight:700;font-size:12.8px;line-height:1.35}
+  .case .target{display:flex;flex-wrap:wrap;gap:4px;align-items:baseline;font-family:ui-monospace,Consolas,monospace;font-size:10.8px;color:var(--muted);margin-top:3px;overflow-wrap:break-word}
+  .case .target a{font-family:Inter,sans-serif;font-size:10.5px;font-weight:800;text-decoration:none;background:#f1f5f2;border:1px solid var(--line);border-radius:999px;padding:1px 7px;white-space:nowrap}
+  .jalur{font-family:ui-monospace,Consolas,monospace;font-size:10.8px;line-height:1.5;color:#40504a;background:#f6f8f7;border:1px solid #eaeef0;border-radius:8px;padding:5px 7px;overflow-wrap:break-word}
+  .covtag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;border-radius:5px;padding:1px 5px;margin-bottom:3px;border:1px solid}
+  .cov-Path{color:var(--blue);border-color:#bcd3f5;background:var(--blue-soft)}
+  .cov-Branch{color:var(--green);border-color:#d6e6db;background:var(--green-soft)}
+  .cov-Boundary{color:var(--amber);border-color:#fde2b8;background:var(--amber-soft)}
+  .cov-Contract{color:#5a4a7a;border-color:#ddd2f0;background:#f3eefb}
+  .cov-Regression{color:var(--red);border-color:#f5c6c6;background:var(--red-soft)}
+  .case .langkah,.case .harap{font-size:12px;color:#3d4a43}
+  .case .harap{color:#2f3d36}
+  .case .harap b{font-weight:700}
+
+  .status{display:flex;flex-direction:column;gap:6px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:#f4f7f5}
+  .seg button{border:0;background:transparent;padding:5px 8px;font-size:10.5px;font-weight:800;color:#7a857f;cursor:pointer;font-family:inherit;flex:1;white-space:nowrap}
+  .seg button:hover{background:#e7eeea}
+  .seg button.on[data-s="lulus"]{background:var(--green);color:#fff}
+  .seg button.on[data-s="gagal"]{background:var(--red);color:#fff}
+  .seg button.on[data-s="belum"]{background:#8a928e;color:#fff}
+  .note{width:100%;border:1px solid var(--line);border-radius:8px;padding:4px 7px;font:inherit;font-size:11px;background:#fff;color:var(--ink);outline:none}
+  .note:focus{border-color:var(--green)}
+  .note::placeholder{color:#a9b1ac}
+
+  .map{padding:18px 22px}
+  .maptable{width:100%;border-collapse:collapse;font-size:12px}
+  .maptable th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);font-weight:800}
+  .maptable td{padding:8px 10px;border-bottom:1px solid #f0f3f1;vertical-align:top;color:#3b4a42}
+  .maptable tr:last-child td{border-bottom:0}
+  .maptable code{font-size:11px;background:#f4f7f5;border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+  .maptable .center{text-align:center;font-variant-numeric:tabular-nums;font-weight:700;color:var(--green)}
+
+  .empty{padding:40px 20px;text-align:center;color:var(--muted)}
+  footer{padding:26px 0 40px;text-align:center;font-size:11.5px;color:var(--muted)}
+  footer a{color:var(--green);font-weight:700;text-decoration:none}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--green-dark);color:#fff;padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:60}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:1240px){
+    .layout{grid-template-columns:1fr}
+    aside.sidenav{display:none}
+  }
+  @media (max-width:1100px){
+    .case-head{display:none}
+    .toolbar{position:static}
+    .case{grid-template-columns:1fr;gap:8px;border:1px solid var(--line);border-radius:14px;margin:10px 0;padding:12px}
+    .case > div[data-l]::before{content:attr(data-l);display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:3px}
+    .status{flex-direction:row;align-items:center;gap:8px}
+    .status .seg{flex:1}
+    .note{flex:1}
+  }
+  @media (max-width:640px){
+    .topbar .wrap{gap:8px;padding-top:10px;padding-bottom:10px}
+    .topbar .progress,.topbar .hstats{display:none}
+    .topactions{width:100%;flex-wrap:nowrap;gap:6px}
+    .topactions .btn{flex:1;padding:7px 8px;font-size:11px;text-align:center}
+    .brand{min-width:0}
+    .hero{padding:18px}
+    .hero h2{font-size:22px}
+    .toolbar{top:0}
+  }
+  @media print{
+    body{background:#fff;font-size:11px}
+    .topbar,.toolbar,aside.sidenav,.topactions,.seg,input.note{display:none!important}
+    .layout{display:block;padding:0}
+    .card,.hero{box-shadow:none;border-color:#ccc;break-inside:avoid}
+    .case{grid-template-columns:80px 1.3fr 1fr 1.1fr 1.1fr 80px}
+    .case-head{display:grid}
+    .module{page-break-inside:auto}
+    .case{break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <div class="brandmark">W</div>
+      <div>
+        <h1>Whitebox Testing Sheet</h1>
+        <div class="sub">Petopia · PHP native · <span id="totalTop">0</span> kasus uji</div>
+      </div>
+    </div>
+    <div class="progress" title="Progres keseluruhan"><i id="barTop"></i></div>
+    <div class="hstats">
+      <span class="hstat" id="statLulus">0 lulus</span>
+      <span class="hstat red" id="statGagal">0 gagal</span>
+      <span class="hstat gray" id="statBelum">0 belum</span>
+    </div>
+    <div class="topactions">
+      <button class="btn" id="btnCopy" type="button">Salin ringkasan</button>
+      <button class="btn" id="btnExport" type="button">Export JSON</button>
+      <button class="btn" id="btnPrint" type="button">Cetak</button>
+      <button class="btn ghost" id="btnReset" type="button">Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="layout">
+
+    <aside class="sidenav" aria-label="Navigasi modul">
+      <div class="label">Modul pengujian</div>
+      <div id="navList"></div>
+      <div class="navmeta">
+        Status disimpan otomatis di browser ini
+        (<code>localStorage</code>). Tidak ada data yang dikirim ke server.
+      </div>
+    </aside>
+
+    <main>
+      <section class="card hero">
+        <div class="hero-main">
+          <span class="eyebrow">Whitebox · Structural Test</span>
+          <h2>Uji jalur logika aplikasi Petopia</h2>
+          <p>
+            Lembar uji ini memetakan fitur ke <b>fungsi, berkas, dan percabangan</b> yang benar-benar ada di kode
+            (controller, model, helper, dan aturan routing). Setiap kasus menargetkan satu jalur/batas/ kontrak data,
+            sehingga hasilnya bisa ditelusuri balik ke baris logika — bukan sekadar uji tampilan.
+          </p>
+        </div>
+        <div class="hero-side">
+          <div class="gauge">
+            <div class="num" id="gaugePct">0%</div>
+            <div class="cap">cakupan eksekusi manual</div>
+            <div class="progress" style="margin-top:10px"><i id="barGauge"></i></div>
+          </div>
+          <div class="chips" id="covChips"></div>
+        </div>
+      </section>
+
+      <div class="notice">
+        <b>Cara pakai:</b> jalankan aplikasi (Laragon → Start All, buka <code>petopia.test</code> atau
+        <code>localhost/petopia</code>), siapkan data uji, lalu kerjakan kasus dari atas ke bawah dan tandai
+        <b>Lulus/Gagal</b>. Halaman ini tidak mengeksekusi test otomatis — ia adalah kendali cakupan whitebox
+        + bukti hasil.
+        <ul>
+          <li>Uji berurutan per modul agar data uji tidak saling merusak (mis. hapus data butuh data yang belum dipakai).</li>
+          <li>Untuk kasus yang butuh mengosongkan tabel (mis. admin kosong), buat backup dulu lewat <code>mysqldump</code>.</li>
+          <li>Gunakan kolom catatan untuk menempelkan bukti singkat (pesan alert, status HTTP, atau nilai DB).</li>
+        </ul>
+      </div>
+
+      <section class="card env">
+        <h3>Lingkungan &amp; data uji awal</h3>
+        <div class="env-grid">
+          <div class="env-item"><b>Server</b>Apache + PHP 8.3 · MySQL 8.4 (Laragon)<br><code>http://petopia.test/</code> atau <code>http://localhost/petopia/</code></div>
+          <div class="env-item"><b>Database</b><code>db_petopia</code> · user <code>root</code> tanpa password<br>Tabel: admin, pengguna, pelayanan, peliharaan, booking, status_logs</div>
+          <div class="env-item"><b>Akun admin</b>username <code>Bimo_admin</code> · password <code>Bimo_123</code><br>Hanya ada 1 admin (dipakai juga untuk <code>booking.id_admin</code>)</div>
+          <div class="env-item"><b>Data awal klien</b>Daftarkan minimal 2 klien (<code>A</code> dan <code>B</code>) lewat <code>register.php</code>, masing-masing 1 hewan, agar kasus isolasi data bisa diuji.</div>
+          <div class="env-item"><b>Katalog</b>6 layanan seed: Grooming Reguler/Express (sesi), Vaksin &amp; Check-up, Konsultasi Dokter (sesi), Penitipan Harian (hari), Pet Hotel (minggu).</div>
+          <div class="env-item"><b>Kepemilikan data</b>Hewan/booking terikat <code>id_pengguna</code>; semua query klien difilter ID session. Kasus lintas-akun wajib diuji.</div>
+        </div>
+      </section>
+
+      <div class="card toolbar">
+        <label class="search">
+          <span aria-hidden="true">⌕</span>
+          <input id="q" type="search" placeholder="Cari ID, fitur, berkas, atau jalur logika..." aria-label="Cari kasus uji">
+        </label>
+        <div class="filters" id="filters">
+          <button class="filter active" data-f="all" type="button">Semua <span class="n" id="nAll"></span></button>
+          <button class="filter" data-f="belum" type="button">Belum <span class="n" id="nBelum"></span></button>
+          <button class="filter" data-f="lulus" type="button">Lulus <span class="n" id="nLulus"></span></button>
+          <button class="filter" data-f="gagal" type="button">Gagal <span class="n" id="nGagal"></span></button>
+        </div>
+      </div>
+
+      <div id="modules"></div>
+
+      <section class="card map">
+        <h3>Peta fungsi &amp; percabangan yang dicakup</h3>
+        <div style="overflow-x:auto">
+          <table class="maptable">
+            <thead>
+              <tr><th>Berkas / fungsi</th><th>Percabangan (whitebox)</th><th>Kasus</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>BookingModel::hitungTotal()</code></td><td><code>satuan==='hari'||'minggu'</code>; <code>satuan==='minggu'</code>; <code>max(1,hari)</code>; <code>ceil(hari/7)</code></td><td class="center">BKG-07…12</td></tr>
+              <tr><td><code>AuthController::login()</code></td><td>admin ditemukan → password cocok; pengguna ditemukan → cocok; keduanya gagal</td><td class="center">AUT-01…04</td></tr>
+              <tr><td><code>AuthController::register()</code></td><td><code>emailExists()</code> true/false; <code>create()</code> true/false</td><td class="center">AUT-05…07</td></tr>
+              <tr><td><code>KlienController::storePesan()</code></td><td>service null; pet bukan milik; regex tanggal; tanggal lampau; <code>firstId()===0</code>; create true/false</td><td class="center">BKG-03…13</td></tr>
+              <tr><td><code>KlienController::storeHewan()</code></td><td>OR field kosong + <code>ctype_digit()</code>; create true/false; nama kosong → <code>NULL</code></td><td class="center">HWN-01…06</td></tr>
+              <tr><td><code>AdminController::updateStatus()</code></td><td><code>id&lt;=0</code>; <code>in_array()</code> status; <code>affected_rows()==0</code></td><td class="center">PSN-04…08</td></tr>
+              <tr><td><code>AdminController::hapusLayanan()</code></td><td><code>id&lt;=0</code>; <code>countDipakai()&gt;0</code>; delete true/false</td><td class="center">LAY-08…10</td></tr>
+              <tr><td><code>AdminController::simpanPengaturan()</code></td><td><code>aksi==='profil'</code>; regex telepon; <code>usernameExists()</code>; <code>aksi==='password'</code>; lama; panjang; konfirmasi</td><td class="center">CRG-07…14</td></tr>
+              <tr><td><code>helpers.php::base_url()</code></td><td>URL folder (trailing slash) vs URL file; root vs subfolder; normalisasi <code>\</code> Windows</td><td class="center">RTR-04…08</td></tr>
+              <tr><td><code>LayananModel::metaFor() / hargaLabel()</code></td><td>nama dikenal vs fallback; <code>harga&lt;=0</code>; pembulatan <code>rtrim</code></td><td class="center">KLI-05…09</td></tr>
+              <tr><td><code>LayananModel::delete()</code> / <code>PenggunaModel::delete()</code></td><td>FK RESTRICT → <code>false</code>; <code>affected_rows</code> 0; <code>mysqli_report(OFF)</code> mencegah fatal</td><td class="center">MDL-04…06</td></tr>
+              <tr><td><code>require_role()</code> di controller</td><td>tanpa session; role salah; role benar</td><td class="center">SEC-01…04</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    Whitebox test sheet · Petopia · dibuat untuk demo 2 &amp;
+    <a href="index.php">buka aplikasi</a> · status tersimpan lokal di browser
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const MODULES = [
+  {
+    kode: "AUT", nama: "Autentikasi", file: "routes/auth/* · AuthController",
+    kasus: [
+      {id:"WB-AUT-01",cov:"Branch",nama:"Login admin valid",target:"AuthController::login() L28-41",jalur:"admin ditemukan && password === input",langkah:"Login username Bimo_admin + password benar.",harap:"302 ke admin_dashboard.php; session role=admin, id_admin & nama terisi.",buka:"login.php"},
+      {id:"WB-AUT-02",cov:"Branch",nama:"Login klien valid (email)",target:"AuthController::login() L43-50",jalur:"admin null → pengguna ditemukan && password cocok",langkah:"Daftarkan klien 1, lalu login pakai email + password.",harap:"302 ke index.php; session role=klien, id_pengguna terisi.",buka:"login.php"},
+      {id:"WB-AUT-03",cov:"Branch",nama:"Login gagal (kedua jalur false)",target:"AuthController::login() L52",jalur:"admin gagal && pengguna gagal",langkah:"Login kredensial acak.",harap:"alert 'Login gagal! Username/Email atau Password Anda salah.' lalu login.php; tidak ada session baru.",buka:"login.php"},
+      {id:"WB-AUT-04",cov:"Branch",nama:"Email valid tapi password salah",target:"AuthController::login() L44-46",jalur:"user ditemukan, password !== input",langkah:"Login email klien dengan password salah.",harap:"Alert yang sama seperti AUT-03; tidak membocorkan apakah email terdaftar.",buka:"login.php"},
+      {id:"WB-AUT-05",cov:"Branch",nama:"Register email baru",target:"AuthController::register() L55-66",jalur:"emailExists() false → create() true",langkah:"Isi form register lengkap dengan email baru.",harap:"Alert sukses → login.php; 1 baris baru di tabel pengguna.",buka:"register.php"},
+      {id:"WB-AUT-06",cov:"Branch",nama:"Register email duplikat",target:"AuthController::register() L58-60",jalur:"emailExists() true",langkah:"Daftar ulang dengan email yang sudah ada.",harap:"Alert 'Email sudah terdaftar'; tidak ada insert.",buka:"register.php"},
+      {id:"WB-AUT-07",cov:"Contract",nama:"Register field wajib kosong (bypass HTML5)",target:"AuthController::register() L62-66",jalur:"create() false karena kolom NOT NULL",langkah:"POST proses_register.php tanpa nama/telepon (lewati validasi browser).",harap:"Alert 'Terjadi kesalahan sistem...' tanpa fatal error; tidak ada baris setengah jadi."},
+      {id:"WB-AUT-08",cov:"Path",nama:"Logout menghancurkan session",target:"AuthController::logout() L69-74",jalur:"session_destroy → redirect",langkah:"Klik logout, lalu buka index.php.",harap:"Session hilang; index.php → 302 login.php.",buka:"logout.php"},
+      {id:"WB-AUT-09",cov:"Path",nama:"Halaman syarat publik",target:"AuthController::syarat() L23-26",jalur:"tanpa require_role",langkah:"Buka syarat.php tanpa login.",harap:"200 dan halaman syarat tampil.",buka:"syarat.php"},
+      {id:"WB-AUT-10",cov:"Contract",nama:"Password disimpan plaintext",target:"PenggunaModel::create() L20-32",jalur:"tidak ada hashing",langkah:"Daftar dengan password 'rahasia1', cek tabel pengguna.",harap:"Kolom password = 'rahasia1' apa adanya (sesuai konvensi proyek)."}
+    ]
+  },
+  {
+    kode: "RTR", nama: "Routing & Helper URL", file: ".htaccess · app/Core/helpers.php",
+    kasus: [
+      {id:"WB-RTR-01",cov:"Path",nama:"Rewrite URL publik ke routes/",target:".htaccess baris login.php",jalur:"pola ^login\\.php$ cocok",langkah:"GET /login.php.",harap:"200 halaman login (bukan 404).",buka:"login.php"},
+      {id:"WB-RTR-02",cov:"Branch",nama:"Akses langsung routes/ diblokir",target:".htaccess [F] + THE_REQUEST",jalur:"THE_REQUEST memuat /routes/ → 403",langkah:"GET /routes/auth/login.php.",harap:"403 Forbidden."},
+      {id:"WB-RTR-03",cov:"Branch",nama:"Root folder tanpa index.php",target:".htaccess RewriteRule ^$",jalur:"pola kosong (request direktori)",langkah:"GET http://localhost/petopia/.",harap:"302 ke login.php dengan prefix /petopia (bukan 403/listing).",buka:"./"},
+      {id:"WB-RTR-04",cov:"Branch",nama:"base_url() di vhost",target:"helpers.php::base_url()",jalur:"REQUEST_URI tanpa subfolder",langkah:"Buka petopia.test/login.php, cek href CSS.",harap:"Asset menjadi /asset/css/auth.css."},
+      {id:"WB-RTR-05",cov:"Branch",nama:"base_url() di subfolder",target:"helpers.php::base_url()",jalur:"REQUEST_URI berisi /petopia/",langkah:"Buka localhost/petopia/login.php.",harap:"Asset menjadi /petopia/asset/css/auth.css."},
+      {id:"WB-RTR-06",cov:"Regression",nama:"base_url() untuk URL folder (trailing slash)",target:"helpers.php::base_url() L14-16",jalur:"substr(uri,-1)==='/' → rtrim, bukan dirname",langkah:"Akses /petopia/ (guard klien redirect).",harap:"Location: /petopia/login.php — prefix tidak hilang."},
+      {id:"WB-RTR-07",cov:"Regression",nama:"Normalisasi backslash Windows",target:"helpers.php::base_url() L17",jalur:"dirname() mengembalikan '\\' di Windows",langkah:"Cek header Location pada vhost.",harap:"Tidak ada pola '/\\login.php'; selalu slash normal."},
+      {id:"WB-RTR-08",cov:"Path",nama:"redirect() memakai base yang sama",target:"helpers.php::redirect()",jalur:"header Location = base_url(path)",langkah:"Login sukses dari subfolder.",harap:"Location absolut: http://localhost/petopia/admin_dashboard.php."},
+      {id:"WB-RTR-09",cov:"Path",nama:"URL tak dikenal → 404",target:"Apache",jalur:"tidak ada file & tidak ada rule",langkah:"GET /tidak-ada.php.",harap:"404, bukan halaman kosong."},
+      {id:"WB-RTR-10",cov:"Contract",nama:"Route baru wajib RewriteRule",target:".htaccess",jalur:"file di routes/ tanpa rule → tidak terjangkau",langkah:"Tambah routes/klien/uji.php, akses /uji.php.",harap:"404 — membuktikan pemetaan eksplisit (bukan auto-router)."}
+    ]
+  },
+  {
+    kode: "SEC", nama: "Guard Session & Isolasi Data", file: "helpers.php::require_role() · model kepemilikan",
+    kasus: [
+      {id:"WB-SEC-01",cov:"Branch",nama:"Klien page tanpa session",target:"KlienController::* → require_role('klien')",jalur:"!isset($_SESSION['role'])",langkah:"GET index.php tanpa login.",harap:"302 login.php.",buka:"index.php"},
+      {id:"WB-SEC-02",cov:"Branch",nama:"Admin page diakses klien",target:"AdminController::* → require_role('admin')",jalur:"role==='klien' ≠ 'admin'",langkah:"Login klien, lalu GET admin_dashboard.php.",harap:"302 login.php — bukan 200/403 data."},
+      {id:"WB-SEC-03",cov:"Branch",nama:"Klien page diakses admin",target:"require_role('klien')",jalur:"role==='admin' ≠ 'klien'",langkah:"Login admin, lalu GET hewan.php.",harap:"302 login.php."},
+      {id:"WB-SEC-04",cov:"Branch",nama:"Role benar lolos guard",target:"require_role()",jalur:"role === parameter",langkah:"Login admin, GET admin_dashboard.php.",harap:"200 dashboard tampil."},
+      {id:"WB-SEC-05",cov:"Branch",nama:"POST proses_* tanpa session",target:"semua controller proses",jalur:"guard jalan sebelum logika",langkah:"POST proses_status.php langsung tanpa cookie.",harap:"302 login.php; tidak ada perubahan booking/log."},
+      {id:"WB-SEC-06",cov:"Branch",nama:"Hapus hewan milik klien lain",target:"PeliharaanModel::deleteMilik() L57-67",jalur:"WHERE id_pengguna tidak cocok → 0 rows",langkah:"Login klien A, GET hapus_hewan.php?id=hewan milik B.",harap:"Alert gagal; data B tetap ada."},
+      {id:"WB-SEC-07",cov:"Branch",nama:"Booking dengan hewan orang lain",target:"PeliharaanModel::findMilik() L46-53",jalur:"query mengembalikan null",langkah:"POST proses_pesan.php dengan id_peliharaan milik B.",harap:"Alert 'Pilih hewan milik Anda sendiri.'",buka:"pesan.php"},
+      {id:"WB-SEC-08",cov:"Boundary",nama:"SQL injection pada pencarian",target:"PenggunaModel::search() L73-88",jalur:"LIKE dengan mysqli_real_escape_string",langkah:"Cari: ' OR 1=1 --",harap:"Tidak menampilkan seluruh klien; hasil kosong/terbatas, tanpa error SQL."},
+      {id:"WB-SEC-09",cov:"Boundary",nama:"XSS nama hewan",target:"view klien/hewan.php (htmlspecialchars)",jalur:"output di-escape",langkah:"Tambah hewan bernama <script>alert(1)<\/script>.",harap:"Tampil sebagai teks; tidak ada dialog alert.",buka:"hewan.php"},
+      {id:"WB-SEC-10",cov:"Boundary",nama:"XSS catatan status admin",target:"StatusLogModel::create + view aktivitas",jalur:"output di-escape",langkah:"Isi catatan <img src=x onerror=alert(1)> saat ubah status.",harap:"Tidak tereksekusi; tampil sebagai teks.",buka:"admin_aktivitas.php"}
+    ]
+  },
+  {
+    kode: "KLI", nama: "Beranda & Katalog Klien", file: "KlienController::home/layanan · LayananModel::metaFor/hargaLabel",
+    kasus: [
+      {id:"WB-KLI-01",cov:"Branch",nama:"Kartu populer beranda terhubung ke layanan",target:"KlienController::home() L16-24",jalur:"nama_layanan === nama populer",langkah:"Login klien, buka beranda, klik kartu Grooming.",harap:"Link memuat pesan.php?id_layanan=N yang valid.",buka:"index.php"},
+      {id:"WB-KLI-02",cov:"Branch",nama:"Fallback kartu populer",target:"KlienController::home() L17,24",jalur:"tidak ada nama yang cocok",langkah:"Rename sementara 'Grooming Reguler' (backup dulu).",harap:"Link tetap layanan.php; tidak error/undefined."},
+      {id:"WB-KLI-03",cov:"Branch",nama:"Beranda menampilkan 3 pesanan terbaru",target:"BookingModel::allByPengguna(...,3)",jalur:"limit>0 → LIMIT 3",langkah:"Buat 4 booking untuk satu klien.",harap:"Hanya 3 tampil, urut id_booking DESC.",buka:"index.php"},
+      {id:"WB-KLI-04",cov:"Path",nama:"Katalog layanan lengkap",target:"KlienController::layanan() L73-85",jalur:"loop all() + hargaLabel + metaFor",langkah:"Buka layanan.php.",harap:"6 kartu, harga & kategori sesuai.",buka:"layanan.php"},
+      {id:"WB-KLI-05",cov:"Boundary",nama:"hargaLabel 80000",target:"LayananModel::hargaLabel() L43-49",jalur:"harga>0 → format ribuan",langkah:"Set harga layanan 80000, buka katalog.",harap:"'Mulai Rp 80k'."},
+      {id:"WB-KLI-06",cov:"Boundary",nama:"hargaLabel desimal 15500",target:"LayananModel::hargaLabel()",jalur:"rtrim menghapus ',0'",langkah:"Set harga 15500.",harap:"'Mulai Rp 15,5k'."},
+      {id:"WB-KLI-07",cov:"Branch",nama:"hargaLabel nol",target:"LayananModel::hargaLabel() L45-47",jalur:"harga<=0",langkah:"Set harga 0 (via DB, karena form menolak).",harap:"'Tanya admin'."},
+      {id:"WB-KLI-08",cov:"Path",nama:"metaFor layanan dikenal",target:"LayananModel::metaFor() L30-39",jalur:"key ditemukan",langkah:"Cek kartu Grooming Reguler.",harap:"kategori=grooming, satuan=sesi, durasi 60-90 menit."},
+      {id:"WB-KLI-09",cov:"Branch",nama:"metaFor layanan baru (fallback)",target:"LayananModel::metaFor() L40",jalur:"key tidak ada → default",langkah:"Tambah layanan 'Test Baru', buka katalog.",harap:"kategori=lainnya, satuan=sesi, ikon default, tanpa error."},
+      {id:"WB-KLI-10",cov:"Path",nama:"Bantuan klien statis",target:"KlienController::bantuan()",jalur:"tanpa query DB",langkah:"Buka bantuan.php.",harap:"200, FAQ tampil.",buka:"bantuan.php"}
+    ]
+  },
+  {
+    kode: "HWN", nama: "Kelola Hewan (Klien)", file: "KlienController::storeHewan/hapusHewan · PeliharaanModel",
+    kasus: [
+      {id:"WB-HWN-01",cov:"Path",nama:"Tambah hewan valid",target:"KlienController::storeHewan() L36-61",jalur:"semua valid → create true",langkah:"Isi jenis, ras, umur, catatan, nama.",harap:"Insert sukses, alert berhasil, hewan muncul di daftar.",buka:"hewan.php"},
+      {id:"WB-HWN-02",cov:"Branch",nama:"Umur bukan angka",target:"storeHewan() L45 ctype_digit",jalur:"ctype_digit false",langkah:"Umur 'dua'.",harap:"Alert data belum lengkap; tidak insert."},
+      {id:"WB-HWN-03",cov:"Branch",nama:"Field wajib kosong",target:"storeHewan() L45 (OR)",jalur:"ras/jenis/catatan kosong",langkah:"Kosongkan ras.",harap:"Alert data belum lengkap."},
+      {id:"WB-HWN-04",cov:"Boundary",nama:"Umur 0 diterima",target:"storeHewan() L45",jalur:"ctype_digit('0') true",langkah:"Umur 0.",harap:"Tersimpan sebagai 0 (bukan ditolak)."},
+      {id:"WB-HWN-05",cov:"Branch",nama:"Nama hewan kosong → NULL",target:"PeliharaanModel::create() L36",jalur:"nama === '' → NULL",langkah:"Nama kosong, field lain valid.",harap:"Tersimpan; daftar menampilkan '(Tanpa nama)'."},
+      {id:"WB-HWN-06",cov:"Branch",nama:"Hapus hewan belum dipakai",target:"PeliharaanModel::deleteMilik() L57-67",jalur:"affected_rows > 0",langkah:"Hapus hewan baru.",harap:"Alert dihapus; baris hilang."},
+      {id:"WB-HWN-07",cov:"Branch",nama:"Hapus hewan yang sudah dipakai booking",target:"deleteMilik() + FK RESTRICT",jalur:"query gagal → false (mysqli_report OFF)",langkah:"Hapus hewan yang punya booking.",harap:"Alert gagal, bukan fatal error; data utuh."},
+      {id:"WB-HWN-08",cov:"Branch",nama:"Isolasi daftar hewan",target:"PeliharaanModel::allByPengguna()",jalur:"WHERE id_pengguna = session",langkah:"Bandingkan daftar klien A dan B.",harap:"Masing-masing hanya melihat hewannya."},
+      {id:"WB-HWN-09",cov:"Branch",nama:"ID hapus tidak valid",target:"KlienController::hapusHewan() L66-70",jalur:"id<=0 → short-circuit",langkah:"GET hapus_hewan.php?id=0.",harap:"Alert gagal; tidak ada query destruktif."}
+    ]
+  },
+  {
+    kode: "BKG", nama: "Booking & Aturan Tarif", file: "KlienController::pesan/storePesan · BookingModel::hitungTotal",
+    kasus: [
+      {id:"WB-BKG-01",cov:"Branch",nama:"Pesan tanpa data hewan",target:"KlienController::pesan() L92-95",jalur:"empty($hewan)",langkah:"Klien baru tanpa hewan buka pesan.php.",harap:"Alert + redirect hewan.php.",buka:"pesan.php"},
+      {id:"WB-BKG-02",cov:"Branch",nama:"Belum ada layanan",target:"pesan() L96-99",jalur:"empty($layanan)",langkah:"Kosongkan pelayanan (backup dulu).",harap:"Alert 'Belum ada layanan tersedia.' → layanan.php."},
+      {id:"WB-BKG-03",cov:"Branch",nama:"ID layanan tidak valid",target:"storePesan() L116-119",jalur:"find() null",langkah:"POST id_pelayanan=9999.",harap:"Alert 'Layanan tidak valid.'"},
+      {id:"WB-BKG-04",cov:"Branch",nama:"Format tanggal salah",target:"storePesan() L128-130",jalur:"regex YYYY-MM-DD false",langkah:"Isi 19/11/2026.",harap:"Alert 'Tanggal tidak valid.'"},
+      {id:"WB-BKG-05",cov:"Branch",nama:"Tanggal masuk lampau",target:"storePesan() L131-133",jalur:"masuk < hariIni",langkah:"Tanggal masuk kemarin.",harap:"Alert tanggal minimal hari ini."},
+      {id:"WB-BKG-06",cov:"Branch",nama:"Tanggal keluar mundur",target:"storePesan() L131",jalur:"keluar < masuk",langkah:"Masuk 21, keluar 19.",harap:"Alert tanggal keluar tidak boleh mundur."},
+      {id:"WB-BKG-07",cov:"Branch",nama:"Tarif sesi = flat",target:"BookingModel::hitungTotal() L16",jalur:"satuan bukan hari/minggu",langkah:"Grooming Reguler, 3 hari.",harap:"Total = harga (tidak dikali hari)."},
+      {id:"WB-BKG-08",cov:"Boundary",nama:"Tarif hari 1 hari",target:"hitungTotal() L10-14",jalur:"kelipatan = max(1,1)",langkah:"Penitipan, masuk=keluar.",harap:"Total = harga × 1."},
+      {id:"WB-BKG-09",cov:"Path",nama:"Tarif hari 3 hari",target:"hitungTotal() L11-14",jalur:"hari = 3 (inklusif)",langkah:"Penitipan 19→21.",harap:"Total = harga × 3."},
+      {id:"WB-BKG-10",cov:"Boundary",nama:"Tarif minggu 7 hari",target:"hitungTotal() L13",jalur:"ceil(7/7)=1",langkah:"Pet Hotel 7 hari.",harap:"Total = harga × 1."},
+      {id:"WB-BKG-11",cov:"Boundary",nama:"Tarif minggu 8 hari",target:"hitungTotal() L13",jalur:"ceil(8/7)=2",langkah:"Pet Hotel 8 hari.",harap:"Total = harga × 2."},
+      {id:"WB-BKG-12",cov:"Branch",nama:"Admin penerima tidak ada",target:"storePesan() L135-138 + AdminModel::firstId()",jalur:"id_admin === 0",langkah:"Kosongkan tabel admin (backup dulu).",harap:"Alert 'Belum ada admin penerima pesanan'; tidak insert."},
+      {id:"WB-BKG-13",cov:"Path",nama:"Booking sukses",target:"storePesan() L140-157",jalur:"semua valid → create true",langkah:"Buat booking valid.",harap:"Baris status P, total dari server, alert sukses → pesanan.php.",buka:"pesan.php"},
+      {id:"WB-BKG-14",cov:"Contract",nama:"Paritas estimasi JS vs server",target:"pesan.php::hitungEstimasi() vs hitungTotal()",jalur:"sesi / hari / minggu",langkah:"Bandingkan teks estimasi dengan total_harga tersimpan.",harap:"Nilai identik pada ketiga satuan."}
+    ]
+  },
+  {
+    kode: "PSN", nama: "Admin: Pesanan & Status", file: "AdminController::dashboard/pesanan/updateStatus · StatusLogModel",
+    kasus: [
+      {id:"WB-PSN-01",cov:"Path",nama:"KPI dashboard",target:"AdminController::dashboard() L12-23",jalur:"agregat 4 query",langkah:"Bandingkan angka KPI dengan SELECT COUNT.",harap:"total klien, pesanan bulan ini, layanan aktif, pending sama.",buka:"admin_dashboard.php"},
+      {id:"WB-PSN-02",cov:"Branch",nama:"Aktivitas terbaru maks 4",target:"StatusLogModel::allSemua(...,4)",jalur:"LIMIT 4",langkah:"Buat >4 log status.",harap:"Dashboard hanya menampilkan 4 terbaru."},
+      {id:"WB-PSN-03",cov:"Path",nama:"Daftar pesanan JOIN",target:"BookingModel::allAdmin()",jalur:"JOIN pengguna/pelayanan/peliharaan",langkah:"Buka admin_pesanan.php.",harap:"Nama klien, hewan, layanan, status tampil; tanpa baris hilang.",buka:"admin_pesanan.php"},
+      {id:"WB-PSN-04",cov:"Path",nama:"Ubah status valid",target:"AdminController::updateStatus() L48-66",jalur:"valid → update true → log",langkah:"Ubah P→K dengan catatan.",harap:"Alert sukses; status berubah; 1 log baru."},
+      {id:"WB-PSN-05",cov:"Branch",nama:"Kode status tidak valid",target:"updateStatus() L53-55",jalur:"in_array false",langkah:"POST status_booking=X.",harap:"Alert 'Status tidak valid.'; tanpa update/log."},
+      {id:"WB-PSN-06",cov:"Branch",nama:"ID booking tidak valid",target:"updateStatus() L53",jalur:"id <= 0",langkah:"POST id_booking=0.",harap:"Alert status tidak valid."},
+      {id:"WB-PSN-07",cov:"Boundary",nama:"Status sama (no-op)",target:"BookingModel::updateStatus() L100-104",jalur:"affected_rows 0 → false",langkah:"Ubah K→K.",harap:"Alert 'Gagal ubah status...'; tidak ada log baru."},
+      {id:"WB-PSN-08",cov:"Branch",nama:"Catatan log opsional",target:"StatusLogModel::create() L11-12",jalur:"ctt !== '' ? quoted : NULL",langkah:"Ubah status dengan dan tanpa catatan.",harap:"Catatan tersimpan; yang kosong menjadi NULL."},
+      {id:"WB-PSN-09",cov:"Branch",nama:"Filter aktivitas valid",target:"AdminController::aktivitas() L28-31",jalur:"in_array(filter) true",langkah:"Buka admin_aktivitas.php?status=K.",harap:"Hanya log K yang tampil.",buka:"admin_aktivitas.php"},
+      {id:"WB-PSN-10",cov:"Branch",nama:"Filter aktivitas tidak valid",target:"aktivitas() L29-31",jalur:"in_array false → filter=''",langkah:"Buka ?status=Z.",harap:"Semua log tampil tanpa error."},
+      {id:"WB-PSN-11",cov:"Boundary",nama:"Batas riwayat 100 baris",target:"StatusLogModel::allSemua() L41-58",jalur:"LIMIT 100 (max 500)",langkah:"Buat >100 log (bisa loop SQL).",harap:"Maksimal 100 baris."}
+    ]
+  },
+  {
+    kode: "LAY", nama: "Admin: Kelola Layanan", file: "AdminController::layanan/simpanLayanan/hapusLayanan · LayananModel",
+    kasus: [
+      {id:"WB-LAY-01",cov:"Path",nama:"Tambah layanan valid",target:"AdminController::simpanLayanan() L84-96",jalur:"id=0 → create true",langkah:"Isi nama + harga > 0.",harap:"Alert tersimpan; muncul di katalog.",buka:"admin_layanan.php"},
+      {id:"WB-LAY-02",cov:"Branch",nama:"Nama kosong",target:"simpanLayanan() L90-92",jalur:"trim(nama)===''",langkah:"Nama berisi spasi saja.",harap:"Alert wajib isi + harga > 0; tidak insert."},
+      {id:"WB-LAY-03",cov:"Branch",nama:"Harga 0 / negatif",target:"simpanLayanan() L90",jalur:"harga<=0",langkah:"Harga 0.",harap:"Alert validasi."},
+      {id:"WB-LAY-04",cov:"Contract",nama:"Guard ganda di model",target:"LayananModel::create() L76-88",jalur:"nama/harga invalid → false",langkah:"Panggil model langsung dari PHP CLI bila perlu.",harap:"return false; tidak ada query INSERT."},
+      {id:"WB-LAY-05",cov:"Branch",nama:"Mode edit memuat data",target:"AdminController::layanan() L72-75",jalur:"edit>0 && find() != null",langkah:"Klik edit pada layanan #1.",harap:"Form terisi data layanan; tombol jadi 'Simpan perubahan'."},
+      {id:"WB-LAY-06",cov:"Branch",nama:"Edit ID tidak ada",target:"layanan() L73-75",jalur:"find() null",langkah:"Buka ?edit=9999.",harap:"Form mode tambah, tanpa warning/fatal."},
+      {id:"WB-LAY-07",cov:"Path",nama:"Update layanan",target:"simpanLayanan() L94",jalur:"id>0 → update",langkah:"Ubah harga layanan.",harap:"Data berubah; katalog ikut berubah."},
+      {id:"WB-LAY-08",cov:"Path",nama:"Hapus layanan belum dipakai",target:"hapusLayanan() L98-110",jalur:"countDipakai=0 → delete true",langkah:"Hapus layanan baru.",harap:"Alert dihapus; baris hilang."},
+      {id:"WB-LAY-09",cov:"Branch",nama:"Hapus layanan yang dipakai",target:"hapusLayanan() L106-108",jalur:"countDipakai > 0",langkah:"Hapus layanan yang punya booking.",harap:"Alert ditolak; data utuh."},
+      {id:"WB-LAY-10",cov:"Branch",nama:"ID hapus tidak valid",target:"hapusLayanan() L101-104",jalur:"id<=0",langkah:"GET hapus_layanan.php?id=0.",harap:"Alert 'ID layanan tidak valid.'"},
+      {id:"WB-LAY-11",cov:"Path",nama:"Kolom 'dipakai' per layanan",target:"layanan() L77-80",jalur:"loop countDipakai",langkah:"Bandingkan angka kolom dengan COUNT booking.",harap:"Angka sesuai per layanan."}
+    ]
+  },
+  {
+    kode: "KLN", nama: "Admin: Kelola Klien", file: "AdminController::klien/simpanKlien/hapusKlien",
+    kasus: [
+      {id:"WB-KLN-01",cov:"Path",nama:"Tambah klien valid",target:"simpanKlien() L126-145",jalur:"semua field + email unik",langkah:"Isi form klien lengkap.",harap:"Alert ditambahkan; baris baru muncul.",buka:"admin_klien.php"},
+      {id:"WB-KLN-02",cov:"Branch",nama:"Field wajib kosong",target:"simpanKlien() L134-136",jalur:"OR kosong",langkah:"Kosongkan alamat.",harap:"Alert 'Semua field wajib diisi.'"},
+      {id:"WB-KLN-03",cov:"Branch",nama:"Email duplikat",target:"simpanKlien() L137-139",jalur:"emailExists true",langkah:"Pakai email klien existing.",harap:"Alert 'Email sudah terdaftar.'"},
+      {id:"WB-KLN-04",cov:"Path",nama:"Hapus klien bersih",target:"hapusKlien() L147-159",jalur:"tanpa hewan & booking → delete true",langkah:"Hapus klien baru tanpa data.",harap:"Alert dihapus; baris hilang."},
+      {id:"WB-KLN-05",cov:"Branch",nama:"Hapus klien masih punya hewan",target:"hapusKlien() L155-157",jalur:"countByPengguna(hewan) > 0",langkah:"Hapus klien berhewan.",harap:"Alert ditolak."},
+      {id:"WB-KLN-06",cov:"Branch",nama:"Hapus klien masih punya pesanan",target:"hapusKlien() L155",jalur:"OR booking > 0",langkah:"Hapus klien yang punya booking.",harap:"Alert ditolak."},
+      {id:"WB-KLN-07",cov:"Path",nama:"Statistik klien",target:"AdminController::klien() L112-123",jalur:"loop n_hewan & n_pesanan",langkah:"Bandingkan dengan COUNT per klien.",harap:"Angka di tabel sesuai."},
+      {id:"WB-KLN-08",cov:"Branch",nama:"ID klien tidak valid",target:"hapusKlien() L150-153",jalur:"id<=0",langkah:"GET hapus_klien.php?id=0.",harap:"Alert 'ID klien tidak valid.'"}
+    ]
+  },
+  {
+    kode: "CRG", nama: "Cari & Pengaturan Admin", file: "AdminController::cari/pengaturan/simpanPengaturan · helper username",
+    kasus: [
+      {id:"WB-CRG-01",cov:"Branch",nama:"Pencarian kosong",target:"AdminController::cari() L164-167",jalur:"q==='' → redirect",langkah:"Buka admin_cari.php tanpa q.",harap:"302 ke admin_dashboard.php."},
+      {id:"WB-CRG-02",cov:"Path",nama:"Cari klien (nama/email/telepon)",target:"PenggunaModel::search()",jalur:"LIKE 3 kolom",langkah:"Cari nama klien.",harap:"Muncul di grup klien."},
+      {id:"WB-CRG-03",cov:"Path",nama:"Cari layanan (nama/deskripsi)",target:"LayananModel::search()",jalur:"LIKE 2 kolom",langkah:"Cari 'groom'.",harap:"Muncul di grup layanan.",buka:"admin_cari.php"},
+      {id:"WB-CRG-04",cov:"Branch",nama:"Cari pesanan berdasarkan ID",target:"BookingModel::search() L111",jalur:"ctype_digit → OR id_booking",langkah:"Cari '1'.",harap:"Pesanan #1 muncul walau nama tidak cocok."},
+      {id:"WB-CRG-05",cov:"Boundary",nama:"Pencarian tanpa hasil",target:"view admin/cari.php",jalur:"0 baris per grup",langkah:"Cari 'zzzz'.",harap:"Empty state rapi, tanpa notice SQL."},
+      {id:"WB-CRG-06",cov:"Path",nama:"Halaman pengaturan",target:"AdminController::pengaturan() L184-192",jalur:"findById(session)",langkah:"Buka admin_pengaturan.php.",harap:"Data akun sesuai session.",buka:"admin_pengaturan.php"},
+      {id:"WB-CRG-07",cov:"Path",nama:"Update profil valid",target:"simpanPengaturan() L200-222",jalur:"aksi=profil → valid → update true",langkah:"Ubah nama admin.",harap:"Tersimpan; $_SESSION['nama'] langsung berubah di topbar."},
+      {id:"WB-CRG-08",cov:"Boundary",nama:"Validasi telepon 6-15 digit",target:"simpanPengaturan() L208-210",jalur:"regex gagal (5/16 digit, huruf)",langkah:"Isi '12345' lalu '0812abc'.",harap:"Alert hanya angka 6-15 digit; tidak update."},
+      {id:"WB-CRG-09",cov:"Branch",nama:"Username dipakai admin lain",target:"AdminModel::usernameExists() + L211-213",jalur:"row lain ditemukan (kecuali id sendiri)",langkah:"Buat admin kedua (via DB), lalu pakai username-nya.",harap:"Alert username sudah dipakai; simpan username sendiri tetap boleh."},
+      {id:"WB-CRG-10",cov:"Branch",nama:"Password lama salah",target:"simpanPengaturan() L229-231",jalur:"akun null atau password !==",langkah:"Ganti password dengan lama salah.",harap:"Alert 'Password lama salah.'"},
+      {id:"WB-CRG-11",cov:"Boundary",nama:"Password baru kurang dari 6",target:"simpanPengaturan() L232-234",jalur:"strlen < 6",langkah:"Password baru '12345'.",harap:"Alert minimal 6 karakter."},
+      {id:"WB-CRG-12",cov:"Branch",nama:"Konfirmasi tidak sama",target:"simpanPengaturan() L235-237",jalur:"baru !== ulang",langkah:"Baru 'abcdef', ulang 'abcdeg'.",harap:"Alert konfirmasi tidak sama."},
+      {id:"WB-CRG-13",cov:"Path",nama:"Ganti password berhasil",target:"simpanPengaturan() L238",jalur:"semua valid → update",langkah:"Lama benar, baru 6+ sama.",harap:"Alert diganti; login ulang dengan password baru berhasil."},
+      {id:"WB-CRG-14",cov:"Branch",nama:"Aksi tidak dikenal",target:"simpanPengaturan() L241",jalur:"aksi bukan profil/password",langkah:"POST aksi=lain.",harap:"Alert 'Aksi tidak dikenal.'"},
+      {id:"WB-CRG-15",cov:"Path",nama:"Bantuan admin",target:"AdminController::bantuan()",jalur:"view statis",langkah:"Buka admin_bantuan.php.",harap:"200, konten bantuan tampil.",buka:"admin_bantuan.php"}
+    ]
+  },
+  {
+    kode: "MDL", nama: "Kontrak Model & Query", file: "app/Models/* · aturan return value",
+    kasus: [
+      {id:"WB-MDL-01",cov:"Path",nama:"statusLabel 4 kode",target:"BookingModel::statusLabel() L61-65",jalur:"map lengkap",langkah:"Cek label P/K/S/B di UI atau PHP CLI.",harap:"Pending/Dikonfirmasi/Selesai/Dibatalkan."},
+      {id:"WB-MDL-02",cov:"Branch",nama:"statusLabel fallback",target:"statusLabel() L64",jalur:"kode tak dikenal → ?? kode",langkah:"Panggil dengan 'X'.",harap:"Mengembalikan 'X' apa adanya."},
+      {id:"WB-MDL-03",cov:"Branch",nama:"statusStyle 4 kode + fallback",target:"BookingModel::statusStyle() L67-76",jalur:"map / ?? ''",langkah:"Cek badge S dan kode 'X'.",harap:"S bergaya hijau; 'X' tanpa style (string kosong)."},
+      {id:"WB-MDL-04",cov:"Contract",nama:"delete layanan saat FK menahan",target:"LayananModel::delete() L104-114",jalur:"mysqli_query gagal → false (bukan fatal)",langkah:"Hapus layanan yang dipakai via PHP CLI.",harap:"return false; tidak ada uncaught exception."},
+      {id:"WB-MDL-05",cov:"Contract",nama:"delete pengguna saat masih punya anak",target:"PenggunaModel::delete() L90-99",jalur:"FK RESTRICT",langkah:"Hapus klien beranak via PHP CLI.",harap:"return false."},
+      {id:"WB-MDL-06",cov:"Branch",nama:"findMilik memfilter pemilik",target:"PeliharaanModel::findMilik() L46-53",jalur:"id cocok, id_pengguna beda → null",langkah:"Panggil dengan pasangan ID yang salah.",harap:"null (bukan data orang lain)."},
+      {id:"WB-MDL-07",cov:"Branch",nama:"allByPengguna limit 0",target:"BookingModel::allByPengguna() L39-58",jalur:"limit>0 false → tanpa LIMIT",langkah:"Panggil tanpa limit.",harap:"Semua booking klien tampil."},
+      {id:"WB-MDL-08",cov:"Boundary",nama:"recent limit minimal 1",target:"PenggunaModel::recent() L47",jalur:"max(1,limit)",langkah:"Panggil recent(0).",harap:"LIMIT 1 (tidak error/LIMIT 0)."},
+      {id:"WB-MDL-09",cov:"Branch",nama:"count mengembalikan 0 saat query gagal",target:"semua count*()",jalur:"!$q → 0",langkah:"Rename tabel sementara di salinan DB, panggil count.",harap:"0, tanpa fatal; dashboard tetap render."},
+      {id:"WB-MDL-10",cov:"Branch",nama:"firstId saat admin kosong",target:"AdminModel::firstId() L26-34",jalur:"0 baris → 0",langkah:"Kosongkan admin (backup dulu), panggil firstId.",harap:"0 (dipakai storePesan untuk menolak booking)."},
+      {id:"WB-MDL-11",cov:"Boundary",nama:"LIKE escape karakter wildcard",target:"*Model::search()",jalur:"mysqli_real_escape_string",langkah:"Cari '%' atau '_'.",harap:"Dicari sebagai karakter literal, bukan wildcard."}
+    ]
+  },
+  {
+    kode: "UI", nama: "Konsistensi UI & Konten", file: "app/Views/** · partials/footer.php",
+    kasus: [
+      {id:"WB-UI-01",cov:"Path",nama:"Footer konsisten di semua halaman",target:"partials/footer.php",jalur:"require di auth/klien/admin",langkah:"Buka login, beranda, dashboard.",harap:"Teks '© <tahun> Petopia · Butuh bantuan? Hubungi tim' sama di semua.",buka:"login.php"},
+      {id:"WB-UI-02",cov:"Regression",nama:"Tidak ada teks developer di UI",target:"grep 'Tema #405d4d'",jalur:"regresi konten",langkah:"Cari teks tema/senada di halaman.",harap:"Tidak ditemukan di UI manapun."},
+      {id:"WB-UI-03",cov:"Path",nama:"Lupa password mengarah ke bantuan",target:"app/Views/auth/login.php L43",jalur:"href WA, bukan '#'",langkah:"Klik 'Lupa password? Chat admin'.",harap:"Membuka wa.me/6285242539520."},
+      {id:"WB-UI-04",cov:"Regression",nama:"Klaim keamanan tidak menyesatkan",target:"login.php & register.php",jalur:"regresi konten",langkah:"Cek teks badge/trust.",harap:"Tidak ada 'Enkripsi login'/'Data aman'/'paw parents'; diganti info CS."}
+    ]
+  }
+];
+
+const KEY = "petopia.whitebox.v1";
+const COV_ORDER = ["Path","Branch","Boundary","Contract","Regression"];
+const FLAT = MODULES.flatMap(m => m.kasus.map(k => Object.assign({}, k, {modul:m.kode, modulNama:m.nama})));
+const byId = Object.fromEntries(FLAT.map(k => [k.id, k]));
+
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function st(id){ const v = state[id]; return v && v.s ? v.s : "belum"; }
+function note(id){ return state[id] && state[id].n ? state[id].n : ""; }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+
+let filter = "all";
+let query = "";
+
+function matches(k){
+  const s = st(k.id);
+  if (filter !== "all" && s !== filter) return false;
+  if (!query) return true;
+  const hay = (k.id + " " + k.nama + " " + k.target + " " + k.jalur + " " + k.modulNama + " " + k.harap).toLowerCase();
+  return hay.includes(query);
+}
+
+function caseHtml(k){
+  const s = st(k.id);
+  return '<div class="case" data-id="' + esc(k.id) + '">'
+    + '<div data-l="ID"><span class="id">' + esc(k.id) + '</span></div>'
+    + '<div data-l="Fitur / target"><div class="name">' + esc(k.nama) + '</div>'
+      + '<span class="target">' + esc(k.target) + (k.buka ? ' <a href="' + esc(k.buka) + '" target="_blank" rel="noopener">buka</a>' : '') + '</span></div>'
+    + '<div data-l="Jalur logika"><span class="covtag cov-' + esc(k.cov) + '">' + esc(k.cov) + '</span><div class="jalur">' + esc(k.jalur) + '</div></div>'
+    + '<div data-l="Input / langkah" class="langkah">' + esc(k.langkah) + '</div>'
+    + '<div data-l="Hasil diharapkan" class="harap">' + esc(k.harap) + '</div>'
+    + '<div data-l="Status"><div class="status">'
+      + '<div class="seg" role="group" aria-label="Status ' + esc(k.id) + '">'
+        + ['belum','lulus','gagal'].map(v => '<button type="button" data-s="' + v + '" class="' + (s===v?'on':'') + '">' + (v==='belum'?'Belum':v==='lulus'?'Lulus':'Gagal') + '</button>').join('')
+      + '</div>'
+      + '<input class="note" type="text" placeholder="Catatan hasil..." value="' + esc(note(k.id)) + '" aria-label="Catatan ' + esc(k.id) + '">'
+    + '</div></div>'
+    + '</div>';
+}
+
+function render(){
+  const host = $("#modules");
+  let html = "";
+  let shown = 0;
+  MODULES.forEach(m => {
+    const list = m.kasus.filter(matches);
+    if (!list.length) return;
+    shown += list.length;
+    const done = m.kasus.filter(k => st(k.id) !== "belum").length;
+    const pct = m.kasus.length ? Math.round(done / m.kasus.length * 100) : 0;
+    html += '<section class="card module" id="mod-' + m.kode + '">'
+      + '<div class="module-head"><div><h3>' + esc(m.nama) + '</h3><div class="file">' + esc(m.file) + '</div></div>'
+      + '<div class="mprog"><span>' + done + '/' + m.kasus.length + '</span><div class="progress"><i style="width:' + pct + '%"></i></div></div></div>'
+      + '<div class="case-head"><div>ID</div><div>Fitur / target</div><div>Jalur logika</div><div>Input / langkah</div><div>Hasil diharapkan</div><div>Status</div></div>'
+      + list.map(caseHtml).join("")
+      + '</section>';
+  });
+  host.innerHTML = html || '<div class="card empty">Tidak ada kasus yang cocok dengan filter/pencarian.</div>';
+  bindCases();
+}
+
+function bindCases(){
+  document.querySelectorAll(".case").forEach(row => {
+    const id = row.dataset.id;
+    row.querySelectorAll(".seg button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const s = btn.dataset.s;
+        state[id] = state[id] || {};
+        state[id].s = s;
+        save();
+        row.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b === btn));
+        updateAll();
+      });
+    });
+    const inp = row.querySelector(".note");
+    inp.addEventListener("input", () => {
+      state[id] = state[id] || {};
+      state[id].n = inp.value;
+      save();
+    });
+  });
+}
+
+function counts(){
+  let lulus=0,gagal=0,belum=0;
+  FLAT.forEach(k => { const s = st(k.id); if (s==="lulus") lulus++; else if (s==="gagal") gagal++; else belum++; });
+  return {lulus,gagal,belum,total:FLAT.length};
+}
+
+function updateAll(){
+  const c = counts();
+  const pct = c.total ? Math.round((c.lulus + c.gagal) / c.total * 100) : 0;
+  $("#barTop").style.width = pct + "%";
+  $("#barGauge").style.width = pct + "%";
+  $("#gaugePct").textContent = pct + "%";
+  $("#statLulus").textContent = c.lulus + " lulus";
+  $("#statGagal").textContent = c.gagal + " gagal";
+  $("#statBelum").textContent = c.belum + " belum";
+  $("#totalTop").textContent = c.total;
+  $("#nAll").textContent = c.total;
+  $("#nLulus").textContent = c.lulus;
+  $("#nGagal").textContent = c.gagal;
+  $("#nBelum").textContent = c.belum;
+
+  const nav = $("#navList");
+  nav.innerHTML = MODULES.map(m => {
+    const total = m.kasus.length;
+    const l = m.kasus.filter(k => st(k.id)==="lulus").length;
+    const f = m.kasus.filter(k => st(k.id)==="gagal").length;
+    const cls = f ? "fail" : (l===total ? "done" : "");
+    return '<a class="navitem" href="#mod-' + m.kode + '"><span class="dot ' + cls + '"></span>' + esc(m.nama)
+      + '<span class="cnt">' + l + '/' + total + '</span></a>';
+  }).join("");
+
+  document.querySelectorAll(".module").forEach(sec => {
+    const m = MODULES.find(x => "mod-" + x.kode === sec.id);
+    if (!m) return;
+    const done = m.kasus.filter(k => st(k.id) !== "belum").length;
+    const pct2 = Math.round(done / m.kasus.length * 100);
+    const p = sec.querySelector(".mprog .progress i");
+    if (p) p.style.width = pct2 + "%";
+    const s = sec.querySelector(".mprog span");
+    if (s) s.textContent = done + "/" + m.kasus.length;
+  });
+}
+
+function covChips(){
+  const host = $("#covChips");
+  host.innerHTML = COV_ORDER.map(c => {
+    const n = FLAT.filter(k => k.cov === c).length;
+    return '<span class="chip">' + c + ' <b>' + n + '</b></span>';
+  }).join("") + '<span class="chip">Total <b>' + FLAT.length + '</b></span>';
+}
+
+function toast(msg){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+/* toolbar */
+$("#q").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); render(); });
+document.querySelectorAll("#filters .filter").forEach(btn => {
+  btn.addEventListener("click", () => {
+    filter = btn.dataset.f;
+    document.querySelectorAll("#filters .filter").forEach(b => b.classList.toggle("active", b === btn));
+    render();
+    updateAll();
+  });
+});
+
+$("#btnPrint").addEventListener("click", () => window.print());
+
+$("#btnReset").addEventListener("click", () => {
+  if (!confirm("Hapus semua status dan catatan di browser ini?")) return;
+  state = {};
+  save();
+  render();
+  updateAll();
+  toast("Status direset.");
+});
+
+$("#btnExport").addEventListener("click", () => {
+  const c = counts();
+  const payload = {
+    aplikasi: "Petopia",
+    halaman: "whitebox.html",
+    waktu: new Date().toISOString(),
+    ringkasan: c,
+    hasil: FLAT.map(k => ({id:k.id, modul:k.modul, nama:k.nama, target:k.target, jalur:k.jalur, status:st(k.id), catatan:note(k.id)}))
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  const d = new Date();
+  const stamp = d.getFullYear() + String(d.getMonth()+1).padStart(2,"0") + String(d.getDate()).padStart(2,"0");
+  a.href = URL.createObjectURL(blob);
+  a.download = "whitebox-hasil-" + stamp + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast("File JSON diunduh.");
+});
+
+$("#btnCopy").addEventListener("click", async () => {
+  const c = counts();
+  const gagal = FLAT.filter(k => st(k.id)==="gagal").map(k => "- " + k.id + " " + k.nama);
+  const belum = FLAT.filter(k => st(k.id)==="belum").length;
+  const text = "WHITEBOX TEST - PETOPIA\n"
+    + "Total " + c.total + " kasus | Lulus " + c.lulus + " | Gagal " + c.gagal + " | Belum " + c.belum + "\n"
+    + (gagal.length ? "Gagal:\n" + gagal.join("\n") + "\n" : "")
+    + (belum ? "Belum diuji: " + belum + " kasus\n" : "");
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("Ringkasan disalin.");
+  } catch (e) {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); ta.remove();
+    toast("Ringkasan disalin.");
+  }
+});
+
+/* boot */
+covChips();
+render();
+updateAll();
+</script>
+</body>
+</html>
