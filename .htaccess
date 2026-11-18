@@ -1,0 +1,48 @@
+# .htaccess — URL publik lama tetap dipakai, file route asli ada di routes/.
+# Setiap permintaan /login.php, /admin_dashboard.php, dst. di-rewrite internal
+# ke routes/<grup>/<file>.php. Butuh mod_rewrite + AllowOverride All.
+
+RewriteEngine On
+
+# Beranda klien untuk request folder root (/petopia/ atau /).
+RewriteRule ^$ routes/klien/index.php [L]
+
+# --- Auth (publik) ---
+RewriteRule ^login\.php$            routes/auth/login.php            [L]
+RewriteRule ^register\.php$         routes/auth/register.php         [L]
+RewriteRule ^proses_login\.php$     routes/auth/proses_login.php     [L]
+RewriteRule ^proses_register\.php$  routes/auth/proses_register.php  [L]
+RewriteRule ^logout\.php$           routes/auth/logout.php           [L]
+RewriteRule ^syarat\.php$           routes/auth/syarat.php           [L]
+
+# --- Klien ---
+RewriteRule ^index\.php$            routes/klien/index.php           [L]
+RewriteRule ^layanan\.php$          routes/klien/layanan.php         [L]
+RewriteRule ^hewan\.php$            routes/klien/hewan.php           [L]
+RewriteRule ^proses_hewan\.php$     routes/klien/proses_hewan.php    [L]
+RewriteRule ^hapus_hewan\.php$      routes/klien/hapus_hewan.php     [L]
+RewriteRule ^pesan\.php$            routes/klien/pesan.php           [L]
+RewriteRule ^proses_pesan\.php$     routes/klien/proses_pesan.php    [L]
+RewriteRule ^pesanan\.php$          routes/klien/pesanan.php         [L]
+RewriteRule ^bantuan\.php$          routes/klien/bantuan.php         [L]
+
+# --- Admin ---
+RewriteRule ^admin_dashboard\.php$   routes/admin/admin_dashboard.php   [L]
+RewriteRule ^admin_pesanan\.php$     routes/admin/admin_pesanan.php     [L]
+RewriteRule ^proses_status\.php$     routes/admin/proses_status.php     [L]
+RewriteRule ^admin_layanan\.php$     routes/admin/admin_layanan.php     [L]
+RewriteRule ^proses_layanan\.php$    routes/admin/proses_layanan.php    [L]
+RewriteRule ^hapus_layanan\.php$     routes/admin/hapus_layanan.php     [L]
+RewriteRule ^admin_klien\.php$       routes/admin/admin_klien.php       [L]
+RewriteRule ^proses_klien\.php$      routes/admin/proses_klien.php      [L]
+RewriteRule ^hapus_klien\.php$       routes/admin/hapus_klien.php       [L]
+RewriteRule ^admin_cari\.php$        routes/admin/admin_cari.php        [L]
+RewriteRule ^admin_bantuan\.php$     routes/admin/admin_bantuan.php     [L]
+RewriteRule ^admin_aktivitas\.php$   routes/admin/admin_aktivitas.php   [L]
+RewriteRule ^admin_pengaturan\.php$  routes/admin/admin_pengaturan.php  [L]
+RewriteRule ^proses_pengaturan\.php$ routes/admin/proses_pengaturan.php [L]
+
+# File route internal tidak untuk diakses langsung dari browser.
+# Rewrite internal di atas tetap jalan karena THE_REQUEST tetap URL publik.
+RewriteCond %{THE_REQUEST} \s/+.*\broutes/ [NC]
+RewriteRule ^routes/ - [F]

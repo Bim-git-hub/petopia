@@ -1,0 +1,14 @@
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Log & file sementara
+*.log
+*.tmp
+*.bak
+
+# Backup database lokal (jangan di-commit)
+*.sql
