@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blackbox Testing — Petopia</title>
+<style>
+  :root{
+    --green:#405d4d; --green-dark:#2c4236; --green-soft:#e6efe9;
+    --bg:#e9ecef; --card:#fff; --ink:#17201c; --muted:#6d7a73;
+    --line:#dde3df; --amber:#8a5a12; --amber-soft:#fff7e6;
+    --red:#a03d3d; --red-soft:#fdeeee; --blue:#2f4a7a; --blue-soft:#e6f0ff;
+    --radius:20px; --shadow:0 10px 30px rgba(64,93,77,.10);
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:Inter,"Segoe UI",system-ui,-apple-system,sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--green)}
+  code,.mono,pre{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+  .wrap{max-width:1560px;margin:0 auto;padding:0 20px}
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .topbar .wrap{display:flex;align-items:center;gap:18px;padding-top:12px;padding-bottom:12px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px;min-width:270px}
+  .brandmark{width:42px;height:42px;border-radius:14px;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:800;font-family:Outfit,Inter,sans-serif;font-size:18px;box-shadow:0 8px 18px rgba(64,93,77,.25)}
+  .brand h1{font-size:15px;margin:0;font-weight:800;letter-spacing:-.01em}
+  .brand .sub{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+  .hstats{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap}
+  .hstat{background:var(--green-soft);border:1px solid #d6e6db;color:var(--green);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:700}
+  .hstat.red{background:var(--red-soft);border-color:#f5c6c6;color:var(--red)}
+  .hstat.amber{background:var(--amber-soft);border-color:#fde2b8;color:var(--amber)}
+  .hstat.gray{background:#f3f5f4;border-color:var(--line);color:var(--muted)}
+  .topactions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s;font-family:inherit}
+  .btn:hover{border-color:var(--green);color:var(--green)}
+  .btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+  .btn.primary:hover{background:var(--green-dark);color:#fff}
+  .btn.ghost{background:transparent}
+  .progress{height:6px;background:#dfe5e1;border-radius:99px;overflow:hidden;flex:1;min-width:160px}
+  .topbar .progress{flex:0 1 300px}
+  .progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#5d7f6c,var(--green));border-radius:99px;transition:width .25s}
+  .layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px;align-items:start;padding:24px 0 40px}
+  aside.sidenav{position:sticky;top:82px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);max-height:calc(100vh - 102px);overflow:auto}
+  .sidenav .label{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800;padding:4px 8px 8px}
+  .navitem{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;color:#3d4a43;text-decoration:none;font-size:12.5px;font-weight:600}
+  .navitem:hover{background:var(--green-soft);color:var(--green)}
+  .navitem .dot{width:7px;height:7px;border-radius:50%;background:#cfd6d2;flex:none}
+  .navitem .dot.done{background:var(--green)}
+  .navitem .dot.fail{background:var(--red)}
+  .navitem .cnt{margin-left:auto;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .navmeta{margin-top:12px;padding:10px;border-top:1px dashed var(--line);font-size:11px;color:var(--muted);line-height:1.5}
+  main{min-width:0;display:flex;flex-direction:column;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .hero{padding:24px 26px;display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;background:radial-gradient(900px 200px at 100% 0%,rgba(64,93,77,.10),transparent 70%),#fff}
+  .hero-main{flex:1 1 460px;min-width:280px}
+  .eyebrow{display:inline-flex;align-items:center;gap:6px;background:var(--green-soft);border:1px solid #d6e6db;color:var(--green);border-radius:999px;padding:4px 10px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .hero h2{font-family:Outfit,Inter,sans-serif;font-size:26px;line-height:1.1;letter-spacing:-.03em;margin:12px 0 8px}
+  .hero p{margin:0;color:var(--muted);max-width:78ch}
+  .hero-side{flex:0 1 300px;min-width:240px;display:flex;flex-direction:column;gap:10px}
+  .gauge{background:#f7f9f8;border:1px solid var(--line);border-radius:16px;padding:14px}
+  .gauge .num{font-family:Outfit,Inter,sans-serif;font-size:30px;font-weight:800;line-height:1;letter-spacing:-.02em}
+  .gauge .cap{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{font-size:11px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 9px;color:var(--muted);font-weight:700}
+  .chip b{color:var(--ink)}
+  .notice{padding:14px 18px;border-left:4px solid var(--green);background:var(--green-soft);border-radius:12px;font-size:12.5px;color:#31463b}
+  .notice b{font-weight:800}
+  .notice ul{margin:6px 0 0;padding-left:18px}
+  .notice li{margin:2px 0}
+  .notice.warn{border-left-color:#c48a2a;background:var(--amber-soft);color:#6d4a12}
+  .env{padding:18px 22px}
+  .env h3,.map h3,.sec-title{margin:0 0 10px;font-size:14px;font-family:Outfit,Inter,sans-serif;letter-spacing:.01em}
+  .env-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+  .env-item{background:#f7f9f8;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:12px;color:#3b4a42}
+  .env-item b{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  .env-item code{background:#eef2f0;border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:11.5px}
+  .datatable{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+  .datatable th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);font-weight:800}
+  .datatable td{padding:8px 10px;border-bottom:1px solid #f0f3f1;vertical-align:top;color:#3b4a42}
+  .datatable tr:last-child td{border-bottom:0}
+  .datatable code{font-size:11px;background:#f4f7f5;border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+  .toolbar{padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:68px;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-radius:16px}
+  .search{flex:1 1 260px;display:flex;align-items:center;gap:8px;background:#f4f7f5;border:1px solid var(--line);border-radius:999px;padding:8px 14px}
+  .search input{border:0;background:transparent;outline:none;width:100%;font:inherit;font-size:12.5px;color:var(--ink)}
+  .filters{display:flex;gap:6px;flex-wrap:wrap}
+  .filter{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit}
+  .filter.active{background:var(--green);border-color:var(--green);color:#fff}
+  .filter .n{font-weight:800;margin-left:4px;opacity:.8}
+  .module{padding:18px 20px 10px;scroll-margin-top:130px;overflow-x:auto}
+  .module-head{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .module-head h3{margin:0;font-family:Outfit,Inter,sans-serif;font-size:17px;letter-spacing:-.01em}
+  .module-head .file{font-size:11.5px;color:var(--muted);font-weight:600}
+  .module-head .mprog{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);font-weight:700;min-width:190px}
+  .module-head .mprog .progress{min-width:90px}
+  .case-head,.case{display:grid;grid-template-columns:84px minmax(165px,1fr) minmax(180px,1.1fr) minmax(200px,1.2fr) 168px;gap:10px;padding:12px;border-top:1px solid #eef1ef;align-items:start}
+  .case-head{border-top:1px dashed var(--line);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800;padding-bottom:6px}
+  .case:hover{background:#fafcfb}
+  .case .id{font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:700;color:var(--green);background:var(--green-soft);border:1px solid #d6e6db;border-radius:999px;padding:3px 7px;display:inline-block;white-space:nowrap}
+  .case .name{font-weight:700;font-size:12.8px;line-height:1.35}
+  .case .pre{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.45}
+  .case .pre b{color:#5d6963;font-weight:700}
+  .io{font-size:11.5px;color:#31413a;background:#f7f9f8;border:1px solid #eaeef0;border-radius:10px;padding:7px 9px;line-height:1.45}
+  .io.out{background:#fbfcfb;border-color:#e6ece8}
+  .io pre{margin:0;white-space:pre-wrap;word-break:break-word;font-size:11.2px;line-height:1.5;color:#24352d}
+  .io .tag{display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:3px}
+  .status{display:flex;flex-direction:column;gap:6px}
+  .seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:#f4f7f5}
+  .seg button{border:0;background:transparent;padding:5px 8px;font-size:10.5px;font-weight:800;color:#7a857f;cursor:pointer;font-family:inherit;flex:1;white-space:nowrap}
+  .seg button:hover{background:#e7eeea}
+  .seg button.on[data-s="lulus"]{background:var(--green);color:#fff}
+  .seg button.on[data-s="gagal"]{background:var(--red);color:#fff}
+  .seg button.on[data-s="belum"]{background:#8a928e;color:#fff}
+  .note{width:100%;border:1px solid var(--line);border-radius:8px;padding:4px 7px;font:inherit;font-size:11px;background:#fff;color:var(--ink);outline:none}
+  .note:focus{border-color:var(--green)}
+  .note::placeholder{color:#a9b1ac}
+  .empty{padding:40px 20px;text-align:center;color:var(--muted)}
+  .map{padding:18px 22px}
+  .maptable{width:100%;border-collapse:collapse;font-size:12px}
+  .maptable th{text-align:left;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);font-weight:800}
+  .maptable td{padding:8px 10px;border-bottom:1px solid #f0f3f1;vertical-align:top;color:#3b4a42}
+  .maptable tr:last-child td{border-bottom:0}
+  .maptable code{font-size:11px;background:#f4f7f5;border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
+  .maptable .center{text-align:center;font-variant-numeric:tabular-nums;font-weight:700;color:var(--green)}
+
+  /* Skenario */
+  .scenarios{display:flex;flex-direction:column;gap:12px}
+  details.scenario{background:#fbfcfb;border:1px solid var(--line);border-radius:16px;padding:0;overflow:hidden}
+  details.scenario[open]{background:#fff}
+  details.scenario > summary{list-style:none;cursor:pointer;padding:13px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#f6f9f7}
+  details.scenario > summary::-webkit-details-marker{display:none}
+  details.scenario > summary:hover{background:var(--green-soft)}
+  .sid{font-family:ui-monospace,Consolas,monospace;font-size:11px;font-weight:800;color:var(--green);background:var(--green-soft);border:1px solid #d6e6db;border-radius:999px;padding:3px 8px;white-space:nowrap}
+  .scenario .stitle{font-weight:800;font-size:13.5px}
+  .scenario .scfile{font-size:11px;color:var(--muted);font-weight:600}
+  .scenario .done{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 9px;white-space:nowrap}
+  .scenario .done input{accent-color:var(--green);width:14px;height:14px;cursor:pointer}
+  .sc-body{padding:14px 16px 16px}
+  .sc-tujuan{margin:0 0 10px;color:#3d4a43;font-size:12.5px}
+  .sc-meta{font-size:11.8px;color:#4c5a53;background:#f7f9f8;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:12px}
+  .sc-meta b{color:var(--ink)}
+  table.steps{width:100%;border-collapse:collapse;font-size:11.8px;margin-bottom:10px}
+  table.steps th{text-align:left;font-size:9.8px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line);font-weight:800;background:#f8faf9}
+  table.steps td{padding:8px;border-bottom:1px solid #eef1ef;vertical-align:top;color:#34443c}
+  table.steps td:first-child{width:34px;color:var(--muted);font-weight:800;font-variant-numeric:tabular-nums}
+  table.steps td:nth-child(3){width:38%}
+  table.steps tr:last-child td{border-bottom:0}
+  table.steps code{font-size:10.8px;background:#f2f6f3;border:1px solid #e5ebe7;border-radius:5px;padding:1px 5px}
+  .sc-rel{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:11px;color:var(--muted);font-weight:700}
+  .relchip{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;font-weight:700;color:var(--green);background:var(--green-soft);border:1px solid #d6e6db;border-radius:999px;padding:2px 7px}
+  .scenario.done .stitle{text-decoration:line-through;text-decoration-thickness:1px;color:#7a857f}
+  .scenario.done .sid{background:#eef2f0;border-color:#dde3df;color:#6d7a73}
+
+  .sqlbox{background:#1f2d26;color:#e8f1ec;border-radius:14px;padding:14px 16px;overflow:auto;font-size:11.5px;line-height:1.55}
+  .sqlbox pre{margin:0;white-space:pre;color:#e8f1ec}
+  .smallmuted{font-size:11.5px;color:var(--muted)}
+  footer{padding:26px 0 40px;text-align:center;font-size:11.5px;color:var(--muted)}
+  footer a{color:var(--green);font-weight:700;text-decoration:none}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--green-dark);color:#fff;padding:10px 18px;border-radius:999px;font-size:12.5px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:60}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:1240px){
+    .layout{grid-template-columns:1fr}
+    aside.sidenav{display:none}
+  }
+  @media (max-width:1180px){
+    .case-head{display:none}
+    .toolbar{position:static}
+    .case{grid-template-columns:1fr;gap:9px;border:1px solid var(--line);border-radius:14px;margin:10px 0;padding:12px}
+    .case > div[data-l]::before{content:attr(data-l);display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:3px}
+    .io .tag{display:none}
+    .status{flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap}
+    .status .seg{flex:0 0 210px}
+    .note{flex:1;min-width:160px}
+  }
+  @media (max-width:640px){
+    .topbar .wrap{gap:8px;padding-top:10px;padding-bottom:10px}
+    .topbar .progress,.topbar .hstats{display:none}
+    .topactions{width:100%;flex-wrap:nowrap;gap:6px}
+    .topactions .btn{flex:1;padding:7px 8px;font-size:11px;text-align:center}
+    .brand{min-width:0}
+    .hero{padding:18px}
+    .hero h2{font-size:22px}
+    .toolbar{top:0}
+    table.steps td:nth-child(3){width:auto}
+  }
+  @media print{
+    body{background:#fff;font-size:10px}
+    .topbar,.toolbar,aside.sidenav,.topactions,.seg,.note,.done{display:none!important}
+    .layout{display:block;padding:0}
+    .card,.hero{box-shadow:none;border-color:#ccc;break-inside:avoid}
+    .case{grid-template-columns:80px 1.1fr 1.2fr 1.3fr;break-inside:avoid}
+    .case-head{display:grid;grid-template-columns:80px 1.1fr 1.2fr 1.3fr}
+    .case .status{display:none!important}
+    .module{page-break-inside:auto}
+    details.scenario{break-inside:avoid}
+    .sqlbox{background:#f4f7f5;color:#17201c;border:1px solid #ccc}
+    .sqlbox pre{color:#17201c}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand">
+      <div class="brandmark">B</div>
+      <div>
+        <h1>Blackbox Testing Sheet</h1>
+        <div class="sub">Petopia · PHP native · <span id="totalTop">0</span> kasus + <span id="totalSk">0</span> skenario</div>
+      </div>
+    </div>
+    <div class="progress" title="Progres keseluruhan"><i id="barTop"></i></div>
+    <div class="hstats">
+      <span class="hstat" id="statLulus">0 lulus</span>
+      <span class="hstat red" id="statGagal">0 gagal</span>
+      <span class="hstat gray" id="statBelum">0 belum</span>
+      <span class="hstat amber" id="statSk">0 skenario</span>
+    </div>
+    <div class="topactions">
+      <a class="btn" href="whitebox.html" style="text-decoration:none">Lembar whitebox</a>
+      <button class="btn" id="btnCopy" type="button">Salin ringkasan</button>
+      <button class="btn" id="btnExport" type="button">Export JSON</button>
+      <button class="btn" id="btnPrint" type="button">Cetak</button>
+      <button class="btn ghost" id="btnReset" type="button">Reset</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="layout">
+
+    <aside class="sidenav" aria-label="Navigasi modul">
+      <div class="label">Skenario</div>
+      <div id="navSkenario"></div>
+      <div class="label" style="padding-top:12px">Modul kasus uji</div>
+      <div id="navList"></div>
+      <div class="navmeta">
+        Status &amp; catatan disimpan otomatis di browser ini (<code>localStorage</code>).
+        Tidak ada data yang dikirim ke server.
+      </div>
+    </aside>
+
+    <main>
+      <section class="card hero">
+        <div class="hero-main">
+          <span class="eyebrow">Blackbox · Functional Test</span>
+          <h2>Uji perilaku Petopia dari sisi pengguna</h2>
+          <p>
+            Lembar ini menguji <b>input → proses → output</b> lewat antarmuka yang benar-benar dipakai:
+            form login/register, katalog, booking, panel admin, sampai pesan <i>alert</i> dan isi database.
+            Setiap kasus memakai data konkret dan hasil yang bisa dibandingkan langsung.
+          </p>
+        </div>
+        <div class="hero-side">
+          <div class="gauge">
+            <div class="num" id="gaugePct">0%</div>
+            <div class="cap">kasus uji sudah dijalankan</div>
+            <div class="progress" style="margin-top:10px"><i id="barGauge"></i></div>
+          </div>
+          <div class="chips" id="covChips"></div>
+        </div>
+      </section>
+
+      <div class="notice">
+        <b>Cara pakai:</b> jalankan Laragon, buka <code>http://petopia.test/</code>, siapkan data uji, lalu
+        kerjakan <b>skenario</b> dari atas ke bawah. Setelah itu tandai tiap kasus <b>Lulus/Gagal</b> dan tulis
+        hasil aktual di kolom catatan.
+        <ul>
+          <li>Skenario = alur utuh (tidak perlu input satu per satu); kasus uji = rincian input/output yang bisa dicek satuan.</li>
+          <li>Jalankan berurutan. Kasus hapus butuh data yang belum dipakai pesanan; kasus “tanpa admin” butuh backup DB.</li>
+          <li>Contoh tanggal memakai <b>19 Nov 2026</b>. Jika dijalankan di hari lain, ganti <code>H</code> dengan tanggal hari ini dan tambah harinya.</li>
+          <li>Kolom catatan dipakai untuk bukti singkat: bunyi alert, URL akhir, nilai DB, atau screenshot.</li>
+        </ul>
+      </div>
+
+      <div class="notice warn">
+        <b>Penting:</b> beberapa kasus sengaja menguji jalur gagal/destruktif (mengosongkan tabel admin,
+        menghapus layanan, mengganti password). Lakukan di database salinan, bukan data demo utama.
+        Query verifikasi ada di bagian akhir lembar ini.
+      </div>
+
+      <section class="card env" id="datauji">
+        <h3>Lingkungan, akun &amp; data uji</h3>
+        <div class="env-grid">
+          <div class="env-item"><b>Server</b>Apache + PHP 8.3 · MySQL 8.4 (Laragon)<br><code>http://petopia.test/</code> atau <code>http://localhost/petopia/</code></div>
+          <div class="env-item"><b>Database</b><code>db_petopia</code> · user <code>root</code> tanpa password<br>Tabel: admin, pengguna, pelayanan, peliharaan, booking, status_logs</div>
+          <div class="env-item"><b>Admin seed</b>username <code>Bimo_admin</code> · password <code>Bimo_123</code><br>Nama <code>Bimo</code> · telp <code>085242539520</code> · jabatan <code>Staff Perawatan</code></div>
+          <div class="env-item"><b>Klien A</b><code>siti@mail.com</code> / <code>siti123</code><br>Siti Rahma · 081234567890 · Jl. Melati No. 10, Bandung</div>
+          <div class="env-item"><b>Klien B</b><code>budi@mail.com</code> / <code>budi123</code><br>Budi Santoso · 081298765432 · Jl. Kenanga No. 5, Jakarta</div>
+          <div class="env-item"><b>Hari uji</b><code>H = 2026-11-19</code> · <code>H+1 = 2026-11-20</code><br><code>H+2 = 2026-11-21</code> · <code>H+5 = 2026-11-24</code> · <code>H+8 = 2026-11-27</code></div>
+        </div>
+
+        <table class="datatable" style="margin-top:16px">
+          <thead><tr><th>Data</th><th>Nilai konkret</th><th>Dipakai untuk</th></tr></thead>
+          <tbody>
+            <tr><td>Hewan A1</td><td><code>Milo</code> · Kucing · Persia · umur 2 · catatan “Sehat”</td><td>booking, hapus, XSS, isolasi</td></tr>
+            <tr><td>Hewan A2</td><td><code>Coco</code> · Anjing · Beagle · umur 4 · catatan “Alergi ayam”</td><td>multi-hewan, hapus</td></tr>
+            <tr><td>Hewan B1</td><td><code>Oren</code> · Kucing · Domestik · umur 1 · catatan “Sehat”</td><td>isolasi data &amp; booking lintas akun</td></tr>
+            <tr><td>Layanan seed</td><td><code>1</code> Grooming Reguler 80.000 (sesi) · <code>2</code> Grooming Express 130.000 (sesi) · <code>3</code> Vaksin &amp; Check-up 120.000 (sesi) · <code>4</code> Konsultasi Dokter 90.000 (sesi) · <code>5</code> Penitipan Harian 65.000 (hari) · <code>6</code> Pet Hotel 420.000 (minggu)</td><td>katalog, tarif, CRUD</td></tr>
+            <tr><td>Booking contoh</td><td><code>#1</code> Siti · Milo · Grooming Reguler · 20→20 Nov · 80.000 · P<br><code>#2</code> Siti · Milo · Penitipan Harian · 20→22 Nov · 195.000 · P<br><code>#3</code> Siti · Milo · Pet Hotel · 20→26 Nov · 420.000 · P<br><code>#4</code> Budi · Oren · Grooming Express · 21→21 Nov · 130.000 · P</td><td>pesanan, status, aktivitas, KPI</td></tr>
+            <tr><td>Layanan uji baru</td><td><code>Grooming Kucing</code> · deskripsi “Mandi + potong kuku” · harga 75.000</td><td>CRUD layanan &amp; meta generik</td></tr>
+            <tr><td>Klien uji baru</td><td><code>Dewi Lestari</code> · dewi@mail.com · dewi123 · 081377788899 · Jl. Anggrek No. 3</td><td>tambah/hapus klien admin</td></tr>
+          </tbody>
+        </table>
+        <div class="smallmuted" style="margin-top:10px">ID di atas adalah contoh saat database baru. Sesuaikan ID aktual di URL/DB — jangan menganggap ID selalu sama setelah data uji dibuat ulang.</div>
+      </section>
+
+      <!-- SKENARIO -->
+      <section class="card module" id="skenario">
+        <div class="module-head">
+          <h3>Skenario pengujian end-to-end</h3>
+          <span class="file">jalankan berurutan · tidak perlu input satu per satu</span>
+          <div class="mprog"><span id="skDoneTxt">0/0 selesai</span><div class="progress"><i id="skBar"></i></div></div>
+        </div>
+        <div class="scenarios" id="scenarioList"></div>
+      </section>
+
+      <div class="card toolbar">
+        <label class="search">
+          <span aria-hidden="true">⌕</span>
+          <input id="q" type="search" placeholder="Cari ID, fitur, input, output, atau pesan alert..." aria-label="Cari kasus uji">
+        </label>
+        <div class="filters" id="filters">
+          <button class="filter active" data-f="all" type="button">Semua <span class="n" id="nAll"></span></button>
+          <button class="filter" data-f="belum" type="button">Belum <span class="n" id="nBelum"></span></button>
+          <button class="filter" data-f="lulus" type="button">Lulus <span class="n" id="nLulus"></span></button>
+          <button class="filter" data-f="gagal" type="button">Gagal <span class="n" id="nGagal"></span></button>
+        </div>
+      </div>
+
+      <div id="modules"></div>
+
+      <section class="card map" id="verifikasi">
+        <h3>Query verifikasi hasil (phpMyAdmin / MySQL CLI)</h3>
+        <p class="smallmuted" style="margin-top:0">Jalankan query ini untuk membuktikan output di layar sama dengan isi database. Ganti nilai email/ID sesuai data uji.</p>
+        <div class="sqlbox"><pre>-- 1. Akun klien &amp; password plaintext (sesuai konvensi proyek)
+SELECT id_pengguna, nama_lengkap, email, password, no_telepon
+FROM pengguna ORDER BY id_pengguna DESC;
+
+-- 2. Hewan per klien (isolasi data)
+SELECT h.* FROM peliharaan h
+JOIN pengguna u ON u.id_pengguna = h.id_pengguna
+WHERE u.email = 'siti@mail.com';
+
+-- 3. Pesanan + total + status (cek hitungTotal server)
+SELECT b.id_booking, u.nama_lengkap, p.nama_layanan,
+       b.tgl_masuk, b.tgl_keluar, b.total_harga, b.status_booking
+FROM booking b
+JOIN pengguna u   ON u.id_pengguna = b.id_pengguna
+JOIN pelayanan p  ON p.id_pelayanan = b.id_pelayanan
+ORDER BY b.id_booking DESC;
+
+-- 4. Riwayat perubahan status (satu-satunya sumber aktivitas)
+SELECT l.id_logs, l.id_booking, a.nama_admin, l.tgl_update,
+       l.status_penitipan, l.catatan_admin
+FROM status_logs l
+JOIN admin a ON a.id_admin = l.id_admin
+ORDER BY l.id_logs DESC;
+
+-- 5. Statistik dashboard
+SELECT (SELECT COUNT(*) FROM pengguna)  AS total_klien,
+       (SELECT COUNT(*) FROM booking
+         WHERE DATE_FORMAT(tgl_masuk,'%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')) AS pesanan_bulan_ini,
+       (SELECT COUNT(*) FROM pelayanan) AS layanan_aktif,
+       (SELECT COUNT(*) FROM booking WHERE status_booking = 'P') AS pending;
+
+-- 6. Cek layanan yang sudah dipakai pesanan (harus &gt; 0 sebelum uji tolak hapus)
+SELECT p.id_pelayanan, p.nama_layanan, COUNT(b.id_booking) AS dipakai
+FROM pelayanan p LEFT JOIN booking b ON b.id_pelayanan = p.id_pelayanan
+GROUP BY p.id_pelayanan, p.nama_layanan ORDER BY p.id_pelayanan;
+
+-- 7. Bukti status sama tidak menambah log (jalankan sebelum/sesudah aksi)
+SELECT COUNT(*) AS jumlah_log FROM status_logs WHERE id_booking = 1;</pre></div>
+        <div class="smallmuted" style="margin-top:10px">Backup dulu sebelum kasus destruktif: <code>mysqldump -u root db_petopia &gt; backup_petopia.sql</code></div>
+      </section>
+
+      <section class="card map">
+        <h3>Peta cakupan: fitur whitebox → kasus blackbox</h3>
+        <div style="overflow-x:auto">
+          <table class="maptable">
+            <thead><tr><th>Fitur / modul whitebox</th><th>Perilaku yang diuji blackbox</th><th>Kasus</th></tr></thead>
+            <tbody>
+              <tr><td><code>AUT</code> Autentikasi</td><td>Login admin/klien, register, email duplikat, logout, halaman syarat</td><td class="center">BB-AUT-01…14</td></tr>
+              <tr><td><code>RTR</code> Routing &amp; helper</td><td>URL publik, 404, blokir routes/, redirect subfolder, guard</td><td class="center">BB-AKS-01…09</td></tr>
+              <tr><td><code>SEC</code> Guard &amp; isolasi</td><td>Akses lintas role, hapus/booking milik orang lain, XSS, SQLi</td><td class="center">BB-SEC-01…10</td></tr>
+              <tr><td><code>KLI</code> Beranda &amp; katalog</td><td>Kartu populer, filter kategori, harga, bantuan, S&amp;K</td><td class="center">BB-KLI-01…16</td></tr>
+              <tr><td><code>HWN</code> Kelola hewan</td><td>Tambah/validasi/hapus, nama kosong, umur 0, isolasi</td><td class="center">BB-HWN-01…14</td></tr>
+              <tr><td><code>BKG</code> Booking &amp; tarif</td><td>Validasi tanggal/layanan/hewan, tarif sesi/hari/minggu, estimasi JS vs server</td><td class="center">BB-BKG-01…22</td></tr>
+              <tr><td><code>PSN</code> Pesanan &amp; aktivitas</td><td>KPI, ubah status, log, catatan, filter aktivitas, bell</td><td class="center">BB-PSN-01…18</td></tr>
+              <tr><td><code>LAY</code> Kelola layanan</td><td>Tambah/edit/hapus, validasi harga, proteksi FK, meta generik</td><td class="center">BB-LAY-01…15</td></tr>
+              <tr><td><code>KLN</code> Kelola klien</td><td>Tambah manual, email unik, hapus bertingkat, statistik</td><td class="center">BB-KLN-01…11</td></tr>
+              <tr><td><code>CRG</code> Cari &amp; pengaturan</td><td>Pencarian global, profil, telepon 6–15 digit, username unik, ganti password</td><td class="center">BB-CRG-01…23</td></tr>
+              <tr><td><code>MDL</code> Kontrak model</td><td>Label/warna status, total tersimpan, data NULL, fallback</td><td class="center">BB-PSN / BB-BKG / BB-LAY</td></tr>
+              <tr><td><code>UI</code> Tampilan &amp; konten</td><td>Footer, link WA, teks, sidebar mobile, aset, judul halaman</td><td class="center">BB-UI-01…11</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    Blackbox test sheet · Petopia · dibuat untuk demo 2 &amp;
+    <a href="index.php">buka aplikasi</a> · <a href="whitebox.html">lembar whitebox</a> ·
+    status tersimpan lokal di browser
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ============================================================
+   DATA UJI BLACKBOX — semua nilai mengacu ke kode Petopia
+   ============================================================ */
+const M = (kode, nama, file, kasus) => ({ kode, nama, file, kasus });
+const c = (id, nama, pre, input, out) => ({ id, nama, pre, input, out });
+
+const MODULES = [
+
+  M("AUT", "Autentikasi & Akun", "login.php · register.php · proses_login.php · proses_register.php · logout.php · syarat.php", [
+
+    c("BB-AUT-01", "Login admin valid",
+      "Database seed, belum login.",
+      "URL: /login.php\nField “Email atau username”: Bimo_admin\nField “Password”: Bimo_123\nKlik “Log in”.",
+      "Tanpa alert. Redirect ke /admin_dashboard.php.\nSidebar & topbar menampilkan “Bimo”.\nDashboard tampil: Total Klien, Pesanan Bulan Ini, Layanan Aktif, Perlu Konfirmasi.\nSession: role=admin, id_admin=1."),
+
+    c("BB-AUT-02", "Login klien valid memakai email",
+      "Klien A sudah terdaftar (siti@mail.com / siti123).",
+      "URL: /login.php\nField “Email atau username”: siti@mail.com\nPassword: siti123\nKlik “Log in”.",
+      "Redirect ke /index.php.\nNavbar klien menampilkan “Halo, Siti Rahma” dan avatar inisial “S”.\nSession: role=klien, id_pengguna terisi (contoh #1)."),
+
+    c("BB-AUT-03", "Login admin dengan password salah",
+      "Belum login.",
+      "Username: Bimo_admin\nPassword: salah123\nKlik “Log in”.",
+      "Alert: “Login gagal! Username/Email atau Password Anda salah.”\nSetelah OK kembali ke /login.php.\nTidak ada session role yang dibuat."),
+
+    c("BB-AUT-04", "Login dengan email tidak terdaftar",
+      "Belum login.",
+      "Username/email: tidakada@mail.com\nPassword: apa123\nKlik “Log in”.",
+      "Alert: “Login gagal! Username/Email atau Password Anda salah.”\nTetap di /login.php. Pesan tidak membocorkan apakah email terdaftar."),
+
+    c("BB-AUT-05", "Login dengan kedua field kosong",
+      "Form login memakai atribut novalidate sehingga validasi browser dilewati.",
+      "Username: (kosong)\nPassword: (kosong)\nKlik “Log in”.",
+      "Alert: “Login gagal! Username/Email atau Password Anda salah.”\nTidak ada error PHP/fatal, tetap di halaman login."),
+
+    c("BB-AUT-06", "Register klien baru valid",
+      "Email dewi@mail.com belum ada.",
+      "Nama lengkap: Dewi Lestari\nEmail: dewi@mail.com\nNo. telepon: 081377788899\nPassword: dewi123\nAlamat: Jl. Anggrek No. 3\nCentang S&amp;K → “Daftar sekarang”.",
+      "Alert: “Pendaftaran Berhasil! Silakan login.” lalu /login.php.\nTabel pengguna bertambah 1 baris.\nLogin dewi@mail.com / dewi123 berhasil → /index.php."),
+
+    c("BB-AUT-07", "Register dengan email duplikat",
+      "Email siti@mail.com sudah terdaftar.",
+      "Nama: Siti Duplikat\nEmail: siti@mail.com\nTelepon: 081200000001\nPassword: duplikat123\nAlamat: Jl. Uji No. 1",
+      "Alert: “Pendaftaran Gagal! Email sudah terdaftar.”\nKembali ke /register.php; jumlah baris pengguna tidak bertambah."),
+
+    c("BB-AUT-08", "Email duplikat beda huruf besar/kecil",
+      "siti@mail.com sudah ada; kolasi DB utf8mb4_0900_ai_ci tidak membedakan kapital.",
+      "Email: SITI@MAIL.COM\nField lain valid (Nama: Siti Kembar, password: siti123).",
+      "Alert: “Pendaftaran Gagal! Email sudah terdaftar.”\nTidak ada baris baru — pencarian email bersifat case-insensitive."),
+
+    c("BB-AUT-09", "Register dengan field wajib lain kosong (bypass HTML5)",
+      "Form register memakai novalidate; email unik, field lain dikosongkan.",
+      "Nama: (kosong)\nEmail: kosong@mail.com\nTelepon: (kosong)\nPassword: (kosong)\nAlamat: (kosong)",
+      "Perilaku yang diuji: server tidak memeriksa field wajib selain email.\nKemungkinan hasil: alert “Pendaftaran Berhasil! Silakan login.” dan baris pengguna dengan nama/password/telepon/alamat kosong tersimpan.\nCatat sebagai temuan validasi; yang penting tidak ada fatal error."),
+
+    c("BB-AUT-10", "Password register 3 karakter tetap diterima",
+      "Uji batas validasi: hint UI “Minimal 8 karakter”, tetapi server tidak memeriksa panjang.",
+      "Nama: Pendek Pass\nEmail: pendek@mail.com\nTelepon: 081211112222\nPassword: 123\nAlamat: Jl. Pendek No. 2",
+      "Alert: “Pendaftaran Berhasil! Silakan login.”\nBaris tersimpan dengan password “123”. Login dengan 123 berhasil.\nCatat sebagai temuan: batas 8 karakter hanya petunjuk, bukan validasi."),
+
+    c("BB-AUT-11", "Remember me tidak membuat sesi permanen",
+      "Login klien dengan checkbox “Ingat saya” dicentang.",
+      "Email: siti@mail.com\nPassword: siti123\nCentang “Ingat saya” → Log in.\nTutup browser, buka lagi /index.php.",
+      "Login pertama berhasil ke /index.php.\nSetelah browser ditutup, membuka /index.php kembali diarahkan ke /login.php — tidak ada cookie “ingat saya”."),
+
+    c("BB-AUT-12", "Logout menghapus session",
+      "Sedang login sebagai klien.",
+      "Klik “Keluar” di navbar (atau buka /logout.php), lalu buka /index.php.",
+      "Redirect ke /login.php.\nMembuka /index.php setelah logout → redirect lagi ke /login.php.\nSession role, id_pengguna, dan nama sudah tidak ada."),
+
+    c("BB-AUT-13", "Halaman Syarat & Ketentuan publik",
+      "Belum login.",
+      "Buka /register.php → klik link “Syarat &amp; Ketentuan” (atau langsung /syarat.php).",
+      "HTTP 200, judul “Syarat &amp; Ketentuan - Petopia”.\nTampil 8 poin: Akun, Data hewan, Pemesanan, Harga, Pembayaran, Pembatalan, Penitipan, Privasi.\nTombol “Saya setuju — daftar” → /register.php, “Kembali login” → /login.php."),
+
+    c("BB-AUT-14", "Link bantuan di halaman login",
+      "Belum login.",
+      "Buka /login.php, klik “Lupa password? Chat admin”.",
+      "Membuka tab baru ke https://wa.me/6285242539520.\nLink “Register as New Client” dan “Daftar →” menuju /register.php."),
+
+  ]),
+
+  M("AKS", "Akses Halaman, Guard & Routing", "require_role() · .htaccess · semua route", [
+
+    c("BB-AKS-01", "Beranda klien tanpa login",
+      "Tidak ada session / sudah logout.",
+      "GET /index.php.",
+      "HTTP 302 ke /login.php (bukan halaman beranda kosong)."),
+
+    c("BB-AKS-02", "Dashboard admin tanpa login",
+      "Tidak ada session.",
+      "GET /admin_dashboard.php.",
+      "HTTP 302 ke /login.php.\nTidak ada data KPI yang tampil."),
+
+    c("BB-AKS-03", "Klien membuka halaman admin",
+      "Login sebagai Siti (role=klien).",
+      "GET /admin_dashboard.php.",
+      "HTTP 302 ke /login.php.\nTidak ada data admin/pesanan yang bocor."),
+
+    c("BB-AKS-04", "Admin membuka halaman klien",
+      "Login sebagai Bimo_admin (role=admin).",
+      "GET /hewan.php.",
+      "HTTP 302 ke /login.php.\nHalaman hewan tidak dirender."),
+
+    c("BB-AKS-05", "POST proses tanpa session",
+      "Tidak login; siapkan id_booking yang valid.",
+      "POST /proses_status.php\nid_booking=1\nstatus_booking=K\ncatatan_admin=tes",
+      "HTTP 302 ke /login.php.\nStatus booking #1 tidak berubah dan status_logs tidak bertambah."),
+
+    c("BB-AKS-06", "Akses langsung file route internal",
+      "Tidak perlu login.",
+      "GET /routes/auth/login.php atau /routes/klien/index.php.",
+      "HTTP 403 Forbidden (diblokir aturan .htaccess), bukan halaman login."),
+
+    c("BB-AKS-07", "URL tidak dikenal",
+      "Server Laragon aktif.",
+      "GET /tidak-ada.php.",
+      "HTTP 404. Tidak muncul halaman putih/daftar folder."),
+
+    c("BB-AKS-08", "Root folder tanpa nama file",
+      "Belum login.",
+      "GET http://petopia.test/ atau http://localhost/petopia/.",
+      "Request folder diarahkan ke /login.php (belum login), bukan 403/listing.\nSetelah login klien, root menampilkan beranda (/index.php)."),
+
+    c("BB-AKS-09", "Semua URL publik yang dipetakan .htaccess",
+      "Aplikasi berjalan; gunakan akun sesuai role.",
+      "Buka berurutan: /login.php, /register.php, /syarat.php, /index.php, /layanan.php, /hewan.php, /pesan.php, /pesanan.php, /bantuan.php, /admin_dashboard.php, /admin_pesanan.php, /admin_layanan.php, /admin_klien.php, /admin_cari.php?q=siti, /admin_aktivitas.php, /admin_pengaturan.php, /admin_bantuan.php.",
+      "Semua URL dikenal mengembalikan 200 (setelah login role yang sesuai) atau 302 ke login (tanpa role).\nTidak ada 404 untuk URL di daftar."),
+
+  ]),
+
+  M("KLI", "Beranda, Katalog & Bantuan Klien", "index.php · layanan.php · bantuan.php · KlienController", [
+
+    c("BB-KLI-01", "Beranda klien setelah login",
+      "Login Siti; sudah punya minimal 1 hewan.",
+      "Buka /index.php.",
+      "Tampil “Rawat si anabul tanpa ribet”, tombol “Pesan layanan” → /layanan.php, “Lihat pesanan” → /pesanan.php.\nKartu akun: “Siti Rahma · Klien · ID #1 · Aktif”."),
+
+    c("BB-KLI-02", "Kartu populer Grooming terhubung ke layanan",
+      "Layanan Grooming Reguler ada (id_pelayanan=1).",
+      "Klik tombol “Pesan grooming” pada kartu Grooming di beranda.",
+      "URL menjadi /pesan.php?id_layanan=1.\nForm menampilkan “Pesan: Grooming Reguler”."),
+
+    c("BB-KLI-03", "Kartu Vaksin terhubung ke layanan",
+      "Layanan Vaksin &amp; Check-up ada (id=3).",
+      "Klik “Pesan vaksin”.",
+      "URL /pesan.php?id_layanan=3; judul form “Pesan: Vaksin &amp; Check-up”."),
+
+    c("BB-KLI-04", "Kartu Penitipan terhubung ke layanan",
+      "Layanan Penitipan Harian ada (id=5).",
+      "Klik “Cek jadwal”.",
+      "URL /pesan.php?id_layanan=5; judul form “Pesan: Penitipan Harian”."),
+
+    c("BB-KLI-05", "Pesanan terbaru di beranda maksimal 3",
+      "Siti punya 4 booking.",
+      "Buka /index.php dan hitung item di panel “Pesanan terbaru”.",
+      "Tampil tepat 3 item, urut dari id_booking terbesar (3 terbaru milik Siti).\nBooking tertua tidak tampil di beranda tetapi tampil di /pesanan.php."),
+
+    c("BB-KLI-06", "Empty state beranda saat belum ada pesanan",
+      "Klien baru tanpa booking.",
+      "Login klien baru → /index.php.",
+      "Panel “Pesanan terbaru” menampilkan “Belum ada pesanan” + link “lihat layanan →”.\nTidak ada error/undefined."),
+
+    c("BB-KLI-07", "Katalog menampilkan 6 layanan seed",
+      "Database seed utuh.",
+      "Buka /layanan.php.",
+      "Judul “Mau rawat si bulu apa hari ini?”.\n6 kartu: Grooming Reguler (Mulai Rp 80k · 60–90 menit), Grooming Express (Mulai Rp 130k · ±45 menit), Vaksin &amp; Check-up (Mulai Rp 120k · 30–45 menit), Konsultasi Dokter (Mulai Rp 90k · 20 menit), Penitipan Harian (Mulai Rp 65k · per hari), Pet Hotel (Mulai Rp 420k · per minggu)."),
+
+    c("BB-KLI-08", "Filter kategori Grooming",
+      "Katalog 6 layanan.",
+      "Klik chip “Grooming”.",
+      "Tampil 2 kartu: Grooming Reguler dan Grooming Express.\nChip Grooming berstatus aktif; 4 kartu lain disembunyikan."),
+
+    c("BB-KLI-09", "Filter kategori Klinik",
+      "Katalog 6 layanan.",
+      "Klik chip “Klinik”.",
+      "Tampil 2 kartu: Vaksin &amp; Check-up dan Konsultasi Dokter."),
+
+    c("BB-KLI-10", "Filter kategori Penitipan",
+      "Katalog 6 layanan.",
+      "Klik chip “Penitipan”.",
+      "Tampil 2 kartu: Penitipan Harian dan Pet Hotel (Mingguan)."),
+
+    c("BB-KLI-11", "Filter kembali ke Semua",
+      "Sedang di filter Penitipan.",
+      "Klik chip “Semua”.",
+      "6 kartu tampil kembali; hanya chip “Semua” yang aktif."),
+
+    c("BB-KLI-12", "CTA kartu memilih layanan di form",
+      "Katalog terbuka.",
+      "Klik tombol “Cek jadwal” pada kartu Penitipan Harian.",
+      "Form terbuka dengan select Layanan = “Penitipan Harian — Mulai Rp 65k”.\nJudul “Pesan: Penitipan Harian”, info harga “Mulai Rp 65k · per hari · Status awal: Pending”."),
+
+    c("BB-KLI-13", "Halaman bantuan klien",
+      "Login klien.",
+      "Buka /bantuan.php.",
+      "Judul “Ada yang bisa dibantu?”.\n5 FAQ: cara memesan, cara bayar, hitungan harga penitipan, pembatalan, CCTV.\nFAQ pertama terbuka; klik FAQ lain membuka jawabannya.\nTombol “Chat WhatsApp” → wa.me/6285242539520."),
+
+    c("BB-KLI-14", "Link S&amp;K dari bantuan",
+      "Login klien.",
+      "Buka /bantuan.php → klik “Baca S&amp;K →”.",
+      "Halaman /syarat.php tampil (HTTP 200) tanpa perlu logout.\nTombol “Kembali login” tetap mengarah ke /login.php."),
+
+    c("BB-KLI-15", "Katalog kosong saat layanan dihapus semua",
+      "Backup DB; kosongkan tabel pelayanan (khusus uji).",
+      "Login klien → /layanan.php.",
+      "Tampil “Belum ada layanan tersedia. Silakan hubungi admin Petopia.”\nTidak ada fatal error; halaman tetap 200."),
+
+    c("BB-KLI-16", "Layanan baru tampil generik di katalog",
+      "Admin sudah menambah layanan “Test Baru” harga 50000 (bukan nama seed).",
+      "Buka /layanan.php, cari kartu “Test Baru”; lalu klik chip Grooming/Klinik/Penitipan.",
+      "Kartu “Test Baru” tampil di filter “Semua” dengan harga “Mulai Rp 50k”, CTA “Pesan”, tanpa durasi.\nKartu tidak muncul di filter Grooming/Klinik/Penitipan karena kategori fallback “lainnya”.\nKlik CTA → /pesan.php?id_layanan=ID baru; estimasi flat sesuai satuan fallback “sesi”."),
+
+  ]),
+  M("HWN", "Kelola Hewan (Klien)", "hewan.php · proses_hewan.php · hapus_hewan.php · PeliharaanModel", [
+
+    c("BB-HWN-01", "Tambah hewan valid",
+      "Login Siti; belum punya hewan.",
+      "Nama hewan: Milo\nJenis: Kucing\nRas: Persia\nUmur (tahun): 2\nCatatan medis: Sehat\nKlik “Simpan hewan”.",
+      "Alert: “Hewan berhasil ditambahkan!” lalu /hewan.php.\nHeader “Hewan saya (1)”, kartu Milo · Kucing · Persia · badge “2 thn” · catatan “Sehat”."),
+
+    c("BB-HWN-02", "Nama hewan kosong menjadi (Tanpa nama)",
+      "Login Siti; nama hewan opsional menurut form.",
+      "Nama hewan: (kosong)\nJenis: Kucing\nRas: Domestik\nUmur: 1\nCatatan medis: Sehat",
+      "Tersimpan tanpa error.\nKartu menampilkan “(Tanpa nama)”; avatar memakai huruf pertama jenis = “K”.\nDB: kolom nama_hewan = NULL."),
+
+    c("BB-HWN-03", "Umur 0 diterima",
+      "Login Siti.",
+      "Nama: Baby\nJenis: Kucing\nRas: Persia\nUmur: 0\nCatatan: Baru lahir",
+      "Alert sukses. Kartu menampilkan badge “0 thn”.\nDB: umur = 0 (bukan ditolak/min 1)."),
+
+    c("BB-HWN-04", "Umur bukan angka ditolak",
+      "Kirim langsung ke server (form hewan memakai validasi HTML5).",
+      "POST /proses_hewan.php\njenis_hewan=Kucing\nras=Persia\numur=dua\ncatatan_medis=Sehat\nnama_hewan=Milo",
+      "Alert: “Data belum lengkap! Isi jenis, ras, umur (angka), dan catatan medis.”\nKembali ke /hewan.php; tidak ada baris baru."),
+
+    c("BB-HWN-05", "Ras kosong ditolak",
+      "Login Siti; kirim langsung ke server.",
+      "jenis_hewan=Kucing\nras=   (spasi saja)\numur=2\ncatatan_medis=Sehat",
+      "Alert: “Data belum lengkap! Isi jenis, ras, umur (angka), dan catatan medis.”\nTidak ada insert."),
+
+    c("BB-HWN-06", "Catatan medis kosong ditolak",
+      "Login Siti; kirim langsung ke server.",
+      "jenis_hewan=Anjing\nras=Beagle\numur=4\ncatatan_medis= (kosong)",
+      "Alert: “Data belum lengkap! Isi jenis, ras, umur (angka), dan catatan medis.”\nTidak ada insert."),
+
+    c("BB-HWN-07", "Jenis hewan tidak dipilih",
+      "Login Siti.",
+      "Buka /hewan.php; biarkan “Pilih jenis...” lalu isi field lain dan klik Simpan.",
+      "Browser menahan submit dan menampilkan pesan wajib pilih item (validasi HTML5 required).\nTidak ada request ke server."),
+
+    c("BB-HWN-08", "Umur negatif ditolak",
+      "Kirim langsung ke server.",
+      "umur=-1\njenis_hewan=Kucing\nras=Persia\ncatatan_medis=Sehat",
+      "Alert: “Data belum lengkap! Isi jenis, ras, umur (angka), dan catatan medis.”\n(karena ctype_digit('-1') false)."),
+
+    c("BB-HWN-09", "Menambah hewan kedua",
+      "Siti sudah punya Milo.",
+      "Nama: Coco\nJenis: Anjing\nRas: Beagle\nUmur: 4\nCatatan: Alergi ayam\nSimpan.",
+      "Header berubah “Hewan saya (2)”.\nDua kartu tampil: Milo dan Coco; data Milo tidak berubah."),
+
+    c("BB-HWN-10", "Hapus hewan yang belum dipakai pesanan",
+      "Siti punya Coco tanpa booking.",
+      "Klik ikon hapus pada kartu Coco → konfirmasi “Hapus data hewan ini?” → OK.",
+      "Alert: “Data hewan dihapus.” lalu /hewan.php.\nHeader kembali “Hewan saya (1)”; baris Coco hilang dari tabel peliharaan."),
+
+    c("BB-HWN-11", "Hapus hewan yang sudah dipakai booking",
+      "Milo dipakai booking #1.",
+      "Klik hapus pada kartu Milo → OK.",
+      "Alert: “Gagal menghapus (mungkin hewan sudah dipakai pesanan).”\nKartu Milo tetap tampil; baris DB utuh."),
+
+    c("BB-HWN-12", "Hapus hewan dengan ID 0",
+      "Login Siti.",
+      "GET /hapus_hewan.php?id=0",
+      "Alert: “Gagal menghapus (mungkin hewan sudah dipakai pesanan).”\nTidak ada query destruktif; daftar hewan tidak berubah."),
+
+    c("BB-HWN-13", "Hapus hewan milik klien lain",
+      "Login Siti; catat id_peliharaan milik Budi (Oren).",
+      "GET /hapus_hewan.php?id=&lt;id_Oren&gt;",
+      "Alert: “Gagal menghapus (mungkin hewan sudah dipakai pesanan).”\nHewan Oren tetap ada dan tetap terlihat oleh Budi."),
+
+    c("BB-HWN-14", "Isolasi daftar hewan antar klien",
+      "Siti punya Milo; Budi punya Oren.",
+      "Login Siti → /hewan.php, hitung kartu. Logout, login Budi → /hewan.php.",
+      "Siti hanya melihat “Hewan saya (1)” dengan Milo.\nBudi hanya melihat “Hewan saya (1)” dengan Oren.\nTidak ada hewan bocor antar akun."),
+
+  ]),
+
+  M("BKG", "Booking, Estimasi & Aturan Tarif", "pesan.php · proses_pesan.php · BookingModel::hitungTotal()", [
+
+    c("BB-BKG-01", "Membuka form pesan tanpa data hewan",
+      "Klien baru (tanpa hewan) login.",
+      "Klik menu “Layanan” → pilih layanan → “Pesan”.",
+      "Alert: “Tambahkan data hewan dulu sebelum memesan layanan.”\nRedirect ke /hewan.php; form pesan tidak dirender."),
+
+    c("BB-BKG-02", "Membuka form pesan saat belum ada layanan",
+      "Backup DB; kosongkan tabel pelayanan. Klien punya hewan.",
+      "Login klien → GET /pesan.php.",
+      "Alert: “Belum ada layanan tersedia.” lalu redirect /layanan.php."),
+
+    c("BB-BKG-03", "Preselect layanan dari URL",
+      "Layanan Grooming Express = id 2.",
+      "Buka /pesan.php?id_layanan=2.",
+      "Judul “Pesan: Grooming Express”.\nSelect Layanan memilih “Grooming Express — Mulai Rp 130k”; estimasi “Rp 130.000”."),
+
+    c("BB-BKG-04", "ID layanan tidak ada di URL",
+      "Layanan seed tersedia.",
+      "Buka /pesan.php?id_layanan=9999.",
+      "Tidak error. Form jatuh ke layanan pertama: “Pesan: Grooming Reguler”.\nSelect memilih Grooming Reguler; estimasi Rp 80.000."),
+
+    c("BB-BKG-05", "POST dengan ID layanan tidak valid",
+      "Login Siti; punya hewan.",
+      "POST /proses_pesan.php\nid_pelayanan=9999\nid_peliharaan=&lt;id_Milo&gt;\ntgl_masuk=2026-11-20\ntgl_keluar=2026-11-20",
+      "Alert: “Layanan tidak valid.” lalu /layanan.php.\nTidak ada booking baru."),
+
+    c("BB-BKG-06", "Booking memakai hewan milik klien lain",
+      "Login Siti; id_peliharaan Oren milik Budi.",
+      "id_pelayanan=1\nid_peliharaan=&lt;id_Oren&gt;\ntgl_masuk=2026-11-20\ntgl_keluar=2026-11-20",
+      "Alert: “Pilih hewan milik Anda sendiri.” lalu /pesan.php.\nTidak ada booking baru."),
+
+    c("BB-BKG-07", "Format tanggal salah",
+      "Login Siti; punya hewan.",
+      "id_pelayanan=1\nid_peliharaan=&lt;id_Milo&gt;\ntgl_masuk=19/11/2026\ntgl_keluar=20/11/2026",
+      "Alert: “Tanggal tidak valid.” lalu /pesan.php.\nTidak ada booking baru."),
+
+    c("BB-BKG-08", "Tanggal masuk sudah lewat",
+      "Hari uji 2026-11-19.",
+      "tgl_masuk=2026-11-18\ntgl_keluar=2026-11-20",
+      "Alert: “Tanggal masuk minimal hari ini dan tanggal keluar tidak boleh mundur.”\nTidak ada booking baru."),
+
+    c("BB-BKG-09", "Tanggal keluar lebih awal dari masuk",
+      "Hari uji 2026-11-19.",
+      "tgl_masuk=2026-11-20\ntgl_keluar=2026-11-19",
+      "Alert: “Tanggal masuk minimal hari ini dan tanggal keluar tidak boleh mundur.”\nTidak ada booking baru."),
+
+    c("BB-BKG-10", "Tanggal kosong (bypass HTML5)",
+      "Form memakai required; kirim langsung ke server.",
+      "tgl_masuk= (kosong)\ntgl_keluar= (kosong)",
+      "Alert: “Tanggal tidak valid.” lalu /pesan.php."),
+
+    c("BB-BKG-11", "Tarif sesi bersifat flat",
+      "Grooming Reguler harga 80.000 (satuan sesi).",
+      "Layanan: Grooming Reguler\nHewan: Milo\ntgl_masuk=2026-11-20\ntgl_keluar=2026-11-22 (3 hari)",
+      "Estimasi di kanan: “Rp 80.000” dengan catatan “Tarif flat sekali sesi (Grooming Reguler).”\nSetelah submit, DB total_harga=80000 (tidak dikali 3)."),
+
+    c("BB-BKG-12", "Tarif hari untuk 1 hari (inklusif)",
+      "Penitipan Harian 65.000/hari.",
+      "Layanan: Penitipan Harian\nHewan: Milo\ntgl_masuk=2026-11-20\ntgl_keluar=2026-11-20",
+      "Estimasi: “Rp 65.000”, catatan “Rp 65.000 × 1 hari”.\nDB total_harga=65000."),
+
+    c("BB-BKG-13", "Tarif hari untuk 3 hari",
+      "Penitipan Harian 65.000/hari.",
+      "Layanan: Penitipan Harian\nHewan: Milo\ntgl_masuk=2026-11-20\ntgl_keluar=2026-11-22",
+      "Estimasi: “Rp 195.000”, catatan “Rp 65.000 × 3 hari”.\nDB total_harga=195000."),
+
+    c("BB-BKG-14", "Tarif hari untuk 6 hari",
+      "Penitipan Harian 65.000/hari.",
+      "tgl_masuk=2026-11-19\ntgl_keluar=2026-11-24",
+      "Estimasi: “Rp 390.000”, catatan “Rp 65.000 × 6 hari”.\nDB total_harga=390000."),
+
+    c("BB-BKG-15", "Tarif minggu untuk 7 hari",
+      "Pet Hotel (Mingguan) 420.000/minggu.",
+      "Layanan: Pet Hotel (Mingguan)\nHewan: Milo\ntgl_masuk=2026-11-20\ntgl_keluar=2026-11-26",
+      "Estimasi: “Rp 420.000”, catatan “Rp 420.000 × 1 minggu (7 hari)”.\nDB total_harga=420000."),
+
+    c("BB-BKG-16", "Tarif minggu untuk 8 hari (2 blok)",
+      "Pet Hotel 420.000/minggu.",
+      "tgl_masuk=2026-11-20\ntgl_keluar=2026-11-27",
+      "Estimasi: “Rp 840.000”, catatan “Rp 420.000 × 2 minggu (8 hari)”.\nDB total_harga=840000."),
+
+    c("BB-BKG-17", "Tarif minggu minimum 1 minggu",
+      "Pet Hotel 420.000/minggu.",
+      "tgl_masuk=2026-11-20\ntgl_keluar=2026-11-20 (1 hari)",
+      "Estimasi: “Rp 420.000”, catatan “Rp 420.000 × 1 minggu (1 hari)”.\nDB total_harga=420000."),
+
+    c("BB-BKG-18", "Booking sukses tersimpan sebagai Pending",
+      "Login Siti; Milo ada; admin seed ada.",
+      "Layanan: Penitipan Harian\nHewan: Milo\ntgl_masuk=2026-11-20\ntgl_keluar=2026-11-22\nKlik “Buat pesanan”.",
+      "Alert: “Pesanan dibuat! Menunggu konfirmasi admin (Rp 195.000).” lalu /pesanan.php.\nKartu pesanan baru: Penitipan Harian, Milo (Kucing), 20 Nov 2026 → 22 Nov 2026, Rp 195.000, badge Pending, kode #baru.\nDB: status_booking=P, id_admin=1, total_harga=195000."),
+
+    c("BB-BKG-19", "Estimasi browser sama dengan total server",
+      "Bandingkan sebelum submit dan isi DB setelah submit.",
+      "Ulangi tiga input: (a) Grooming Reguler 20→22, (b) Penitipan 20→22, (c) Pet Hotel 20→27.",
+      "Teks estimasi berturut-turut: Rp 80.000, Rp 195.000, Rp 840.000.\nNilai total_harga di DB identik untuk ketiga booking.\nTidak ada selisih pembulatan."),
+
+    c("BB-BKG-20", "Booking saat tabel admin kosong",
+      "Backup DB; hapus semua baris admin (khusus uji). Klien punya hewan.",
+      "POST /proses_pesan.php dengan layanan id 1, hewan Milo, tanggal 2026-11-20.",
+      "Alert: “Belum ada admin penerima pesanan, hubungi Petopia.” lalu /layanan.php.\nTidak ada booking baru (id_admin NOT NULL tidak dilanggar).\nPulihkan data admin setelah uji."),
+
+    c("BB-BKG-21", "Satu hewan boleh punya banyak pesanan",
+      "Milo sudah punya booking #1.",
+      "Buat booking baru untuk Milo dengan Grooming Express, 2026-11-21 → 2026-11-21.",
+      "Booking kedua berhasil.\n/pesanan.php menampilkan dua kartu untuk Milo dengan kode berbeda; keduanya tetap tersimpan."),
+
+    c("BB-BKG-22", "Manipulasi total/status dari browser diabaikan",
+      "Buka form pesan, gunakan DevTools untuk menambah input tersembunyi.",
+      "Tambahkan: total_harga=1 dan status_booking=S, lalu submit layanan Penitipan 20→22.",
+      "Server tetap menghitung total sendiri: tersimpan 195000 (bukan 1).\nstatus_booking tetap P (bukan S); id_admin tetap admin pertama."),
+
+  ]),
+  M("PSN", "Dashboard, Pesanan & Aktivitas", "admin_dashboard.php · admin_pesanan.php · proses_status.php · admin_aktivitas.php · StatusLogModel", [
+
+    c("BB-PSN-01", "KPI dashboard sesuai isi database",
+      "Data uji: 2 klien, 6 layanan, 4 booking P (semua tgl_masuk November 2026).",
+      "Login admin → /admin_dashboard.php.",
+      "KPI: Total Klien = 2, Pesanan Bulan Ini = 4, Layanan Aktif = 6, Perlu Konfirmasi = 4.\nCocokkan dengan query statistik di bagian akhir."),
+
+    c("BB-PSN-02", "KPI Pending berubah setelah konfirmasi",
+      "4 booking Pending; ubah #1 menjadi Dikonfirmasi.",
+      "Refresh /admin_dashboard.php.",
+      "Perlu Konfirmasi berubah 4 → 3.\nTotal Klien, Pesanan Bulan Ini, Layanan Aktif tidak berubah."),
+
+    c("BB-PSN-03", "Klien terbaru di dashboard maksimal 5",
+      "Ada 6 klien terdaftar (Siti, Budi, Dewi, Eka, Fajar, Gita).",
+      "Buka /admin_dashboard.php, hitung baris “Klien Terbaru”.",
+      "Tepat 5 baris, urut id_pengguna terbesar (Gita, Fajar, Eka, Dewi, Budi).\nSiti (paling lama) tidak tampil di panel ini tetapi ada di /admin_klien.php."),
+
+    c("BB-PSN-04", "Aktivitas terbaru di dashboard maksimal 4",
+      "Ada 6 log perubahan status.",
+      "Buka /admin_dashboard.php, hitung item “Aktivitas Terbaru”.",
+      "Tepat 4 item terbaru (id_logs terbesar lebih dulu).\nItem ke-5 dan ke-6 hanya tampil di /admin_aktivitas.php."),
+
+    c("BB-PSN-05", "Empty state aktivitas dashboard",
+      "Database baru; status_logs kosong.",
+      "Login admin → /admin_dashboard.php.",
+      "Panel “Aktivitas Terbaru” menampilkan “Belum ada aktivitas” dan “Ubah status pesanan untuk mulai mencatat.”\nTidak ada error."),
+
+    c("BB-PSN-06", "Daftar pesanan admin lengkap",
+      "Ada 4 booking dari 2 klien.",
+      "Buka /admin_pesanan.php.",
+      "Judul “Daftar Pesanan (4)”.\nTiap baris: kode #, nama klien + hewan (jenis), layanan, tanggal masuk → keluar, total Rp, badge status, select ubah status.\nTidak ada baris hilang/kolom kosong."),
+
+    c("BB-PSN-07", "Ubah status Pending → Dikonfirmasi",
+      "Booking #1 masih Pending.",
+      "Di baris #1 pilih status “Dikonfirmasi”; catatan: “Jadwal dikonfirmasi via WA”; klik simpan.",
+      "Alert: “Status pesanan #1 → Dikonfirmasi.”\nBadge berubah biru “Dikonfirmasi”.\nstatus_logs bertambah 1 baris: status K, catatan “Jadwal dikonfirmasi via WA”, id_admin=1."),
+
+    c("BB-PSN-08", "Ubah status Dikonfirmasi → Selesai",
+      "Booking #1 berstatus K.",
+      "Pilih “Selesai”; catatan: “Layanan selesai”; simpan.",
+      "Alert: “Status pesanan #1 → Selesai.”\nBadge hijau “Selesai”.\nLog baru bertambah; log K sebelumnya tetap ada."),
+
+    c("BB-PSN-09", "Ubah status Selesai → Dibatalkan",
+      "Booking #2 berstatus Selesai (bisa juga mulai dari P).",
+      "Pilih “Dibatalkan”; catatan: “Klien membatalkan”; simpan.",
+      "Alert: “Status pesanan #2 → Dibatalkan.”\nBadge merah “Dibatalkan”.\nLog baru bertambah; riwayat lama tidak terhapus."),
+
+    c("BB-PSN-10", "Mengubah ke status yang sama",
+      "Booking #1 saat ini Selesai.",
+      "Pilih lagi “Selesai” lalu simpan.",
+      "Alert: “Gagal ubah status (mungkin status sudah sama).”\nStatus tetap Selesai dan status_logs tidak bertambah."),
+
+    c("BB-PSN-11", "Kode status tidak valid",
+      "Login admin.",
+      "POST langsung /proses_status.php\nid_booking=1\nstatus_booking=X",
+      "Alert: “Status tidak valid.” lalu /admin_pesanan.php.\nStatus booking tidak berubah dan tidak ada log."),
+
+    c("BB-PSN-12", "ID booking tidak valid",
+      "Login admin.",
+      "POST /proses_status.php\nid_booking=0\nstatus_booking=K",
+      "Alert: “Status tidak valid.”\nTidak ada query update/log."),
+
+    c("BB-PSN-13", "Catatan status kosong disimpan NULL",
+      "Booking #3 Pending.",
+      "Ubah status P → K dengan kolom catatan dikosongkan.",
+      "Alert sukses. status_logs.id_booking=#3, catatan_admin = NULL.\nHalaman aktivitas tidak menampilkan baris kutipan catatan untuk log ini."),
+
+    c("BB-PSN-14", "Halaman semua aktivitas",
+      "Ada minimal 5 log dari beberapa booking.",
+      "Buka /admin_aktivitas.php.",
+      "Judul “Semua Aktivitas”, subjudul “Riwayat perubahan status pesanan — terbaru dulu (maks 100).”\nSemua log tampil urut id_logs terbesar.\nTiap item: #booking · layanan → badge status; klien · hewan · tanggal · oleh admin; catatan (jika ada)."),
+
+    c("BB-PSN-15", "Filter aktivitas Dikonfirmasi",
+      "Ada log status P, K, S, dan B.",
+      "Klik filter “Dikonfirmasi” (URL /admin_aktivitas.php?status=K).",
+      "Hanya log dengan status K yang tampil.\nFilter aktif berwarna hijau; jumlah item sesuai query status='K'."),
+
+    c("BB-PSN-16", "Filter aktivitas tidak valid",
+      "Ada beberapa log.",
+      "Buka /admin_aktivitas.php?status=Z.",
+      "Filter Z tidak dipakai; halaman menampilkan semua log (seperti “Semua”).\nTidak ada warning/error PHP."),
+
+    c("BB-PSN-17", "Bell notifikasi Pending di topbar admin",
+      "Ada minimal 1 booking Pending.",
+      "Lihat ikon bell di topbar admin; arahkan kursor untuk melihat title.",
+      "Ikon bell menampilkan titik merah.\nTitle: “&lt;n&gt; pesanan menunggu konfirmasi” (mis. “1 pesanan menunggu konfirmasi”).\nSetelah semua Pending diubah, titik merah hilang."),
+
+    c("BB-PSN-18", "Batas bulan pada KPI Pesanan Bulan Ini",
+      "Hari uji 19 Nov 2026. Buat booking baru dengan tgl_masuk 2026-12-01.",
+      "Buka /admin_dashboard.php.",
+      "KPI Pesanan Bulan Ini tetap menghitung booking November (tidak bertambah).\nBooking Desember tetap muncul di /admin_pesanan.php.\nBukti: query countBulanIni memakai DATE_FORMAT(tgl_masuk,'%Y-%m')."),
+
+  ]),
+
+  M("LAY", "Admin: Kelola Layanan", "admin_layanan.php · proses_layanan.php · hapus_layanan.php · LayananModel", [
+
+    c("BB-LAY-01", "Tambah layanan valid",
+      "Login admin. Sebelum: 6 layanan.",
+      "Nama: Grooming Kucing\nDeskripsi: Mandi + potong kuku\nHarga (Rp): 75000\nKlik “Tambah layanan”.",
+      "Alert: “Layanan tersimpan.”\nJudul “Kelola Layanan (7)”; baris baru Rp 75.000 · “0× pesanan”.\nKatalog klien menampilkan kartu “Grooming Kucing” dengan label “Mulai Rp 75k”."),
+
+    c("BB-LAY-02", "Nama layanan hanya spasi",
+      "Login admin.",
+      "Nama: “   ” (spasi)\nHarga: 50000\nSimpan.",
+      "Alert: “Nama layanan wajib diisi dan harga harus lebih dari 0.”\nJumlah layanan tetap; tidak ada insert."),
+
+    c("BB-LAY-03", "Harga layanan 0",
+      "Login admin.",
+      "Nama: Test Nol\nHarga: 0\nSimpan.",
+      "Alert: “Nama layanan wajib diisi dan harga harus lebih dari 0.”\nTidak ada insert."),
+
+    c("BB-LAY-04", "Harga layanan negatif (bypass HTML5)",
+      "Form memakai min=1; kirim langsung ke server.",
+      "POST /proses_layanan.php\nnama_layanan=Test Minus\nharga_perhari=-5000",
+      "Alert: “Nama layanan wajib diisi dan harga harus lebih dari 0.”\nTidak ada insert."),
+
+    c("BB-LAY-05", "Harga layanan kosong (bypass HTML5)",
+      "Kirim langsung ke server.",
+      "nama_layanan=Test Kosong\nharga_perhari= (kosong)",
+      "Alert: “Nama layanan wajib diisi dan harga harus lebih dari 0.”\n(karena cast kosong = 0)."),
+
+    c("BB-LAY-06", "Mode edit memuat data layanan",
+      "Layanan id 1 = Grooming Reguler 80.000.",
+      "Klik ikon pensil pada baris Grooming Reguler.",
+      "URL /admin_layanan.php?edit=1.\nForm berjudul “Ubah layanan”; field Nama “Grooming Reguler”, deskripsi terisi, harga 80000.\nTombol berubah “Simpan perubahan” + link “Batal”; ada hidden id_pelayanan=1."),
+
+    c("BB-LAY-07", "Edit dengan ID tidak ada",
+      "Login admin.",
+      "Buka /admin_layanan.php?edit=9999.",
+      "Halaman tetap 200 tanpa warning.\nForm dalam mode tambah (“Tambah layanan”), field kosong.\nTidak ada data layanan yang berubah."),
+
+    c("BB-LAY-08", "Update layanan mengubah katalog & tarif",
+      "Layanan “Test Baru” harga 50.000, belum dipakai booking.",
+      "Klik edit Test Baru → ubah harga menjadi 55000 → Simpan perubahan.",
+      "Alert: “Layanan tersimpan.”\nTabel admin menampilkan Rp 55.000.\nKatalog klien menampilkan “Mulai Rp 55k”.\nBooking baru untuk layanan ini memakai total 55.000."),
+
+    c("BB-LAY-09", "Hapus layanan yang belum dipakai",
+      "Layanan “Test Baru” tanpa booking.",
+      "Klik ikon hapus → konfirmasi “Hapus layanan ini?” → OK.",
+      "Alert: “Layanan dihapus.”\nBaris hilang; jumlah layanan berkurang 1; kartu hilang dari katalog klien."),
+
+    c("BB-LAY-10", "Hapus layanan yang sudah dipakai pesanan",
+      "Grooming Reguler dipakai booking #1.",
+      "Klik hapus pada Grooming Reguler → OK.",
+      "Alert: “Layanan tidak bisa dihapus karena sudah dipakai pesanan.”\nLayanan tetap ada; booking tetap utuh.\nKolom “Dipakai” menunjukkan minimal “1× pesanan”."),
+
+    c("BB-LAY-11", "Hapus layanan dengan ID 0",
+      "Login admin.",
+      "GET /hapus_layanan.php?id=0",
+      "Alert: “ID layanan tidak valid.” lalu /admin_layanan.php.\nTidak ada layanan terhapus."),
+
+    c("BB-LAY-12", "Kolom Dipakai sesuai jumlah booking",
+      "Grooming Reguler dipakai 1 booking; layanan baru 0.",
+      "Bandingkan kolom “Dipakai” dengan query COUNT booking per layanan.",
+      "Grooming Reguler “1× pesanan”; layanan baru “0× pesanan”; angka lain sama dengan query.\nTidak ada angka negatif/berlebih."),
+
+    c("BB-LAY-13", "Meta katalog layanan baru bersifat generik",
+      "Layanan “Grooming Kucing” (nama tidak dikenal metaFor).",
+      "Buka katalog klien, periksa kartu tersebut.",
+      "Kartu memakai gambar fallback, ikon default, CTA “Pesan”, tanpa durasi.\nKategori internal “lainnya” sehingga hanya tampil di filter “Semua”.\nTidak ada error undefined index."),
+
+    c("BB-LAY-14", "Nama layanan duplikat diperbolehkan",
+      "Sudah ada “Grooming Reguler”.",
+      "Tambah layanan baru: Nama “Grooming Reguler”, harga 90000.",
+      "Alert: “Layanan tersimpan.”\nSekarang ada dua baris bernama sama dengan harga berbeda.\nKatalog menampilkan dua kartu; tidak ada validasi unik nama."),
+
+    c("BB-LAY-15", "Label harga di bawah 1 ribu",
+      "Layanan dengan harga 500 (bisa lewat form admin).",
+      "Buka katalog klien.",
+      "Label tampil “Mulai Rp 0,5k” (number_format 0,5 lalu rtrim).\nBukan “Rp 500” dan bukan error."),
+
+  ]),
+  M("KLN", "Admin: Kelola Klien", "admin_klien.php · proses_klien.php · hapus_klien.php · PenggunaModel", [
+
+    c("BB-KLN-01", "Tambah klien manual valid",
+      "Login admin. Sebelum: 2 klien.",
+      "Nama lengkap: Dewi Lestari\nEmail: dewi@mail.com\nPassword: dewi123\nNo. telepon: 081377788899\nAlamat: Jl. Anggrek No. 3\nKlik “Tambah klien”.",
+      "Alert: “Klien ditambahkan.”\nJudul “Kelola Klien (3)”; baris Dewi dengan “0 hewan · 0 pesanan”.\nLogin dewi@mail.com / dewi123 → berhasil masuk sebagai klien."),
+
+    c("BB-KLN-02", "Tambah klien dengan field kosong",
+      "Login admin.",
+      "Nama: Dewi Kosong\nEmail: kosong@mail.com\nPassword: dewi123\nTelepon: 081300000000\nAlamat: (kosong)\nSimpan.",
+      "Alert: “Semua field wajib diisi.”\nTidak ada baris baru; jumlah klien tetap."),
+
+    c("BB-KLN-03", "Tambah klien dengan email duplikat",
+      "Email siti@mail.com sudah terdaftar.",
+      "Nama: Siti Baru\nEmail: siti@mail.com\nPassword: baru123\nTelepon: 081311112222\nAlamat: Jl. Baru No. 9",
+      "Alert: “Email sudah terdaftar.”\nTidak ada insert; data Siti lama tidak berubah."),
+
+    c("BB-KLN-04", "Validasi klien manual hanya cek kosong",
+      "Login admin.",
+      "Nama: Uji Pendek\nEmail: pendek2@mail.com\nPassword: 1\nTelepon: 123\nAlamat: Jl. Uji",
+      "Alert: “Klien ditambahkan.”\nPassword “1” dan telepon “123” diterima (tidak ada aturan panjang/format di simpanKlien).\nLogin dengan password 1 berhasil — catat sebagai temuan."),
+
+    c("BB-KLN-05", "Hapus klien tanpa hewan &amp; pesanan",
+      "Dewi baru dibuat, belum punya hewan/booking.",
+      "Klik ikon hapus pada baris Dewi → konfirmasi “Hapus klien ini?” → OK.",
+      "Alert: “Klien dihapus.”\nBaris Dewi hilang; jumlah klien berkurang 1; akun tidak bisa login lagi."),
+
+    c("BB-KLN-06", "Hapus klien yang masih punya hewan",
+      "Siti punya Milo.",
+      "Klik hapus pada baris Siti → OK.",
+      "Alert: “Klien tidak bisa dihapus karena masih punya hewan/pesanan.”\nSiti dan Milo tetap ada."),
+
+    c("BB-KLN-07", "Hapus klien yang masih punya pesanan",
+      "Budi punya booking #4.",
+      "Klik hapus pada baris Budi → OK.",
+      "Alert: “Klien tidak bisa dihapus karena masih punya hewan/pesanan.”\nBooking #4 tetap utuh."),
+
+    c("BB-KLN-08", "Hapus klien dengan ID 0",
+      "Login admin.",
+      "GET /hapus_klien.php?id=0",
+      "Alert: “ID klien tidak valid.” lalu /admin_klien.php.\nTidak ada klien terhapus."),
+
+    c("BB-KLN-09", "Statistik hewan &amp; pesanan per klien",
+      "Siti: 1 hewan, 2 booking. Budi: 1 hewan, 1 booking.",
+      "Buka /admin_klien.php dan baca kolom “Data”.",
+      "Siti “1 hewan · 2 pesanan”; Budi “1 hewan · 1 pesanan”.\nAngka sama dengan COUNT di DB."),
+
+    c("BB-KLN-10", "Empty state tanpa klien",
+      "Backup DB; kosongkan tabel pengguna (khusus uji).",
+      "Buka /admin_klien.php.",
+      "Judul “Kelola Klien (0)”; tabel menampilkan “Belum ada klien terdaftar.”\nForm tambah klien tetap tampil; tidak ada fatal error."),
+
+    c("BB-KLN-11", "Klien tambahan admin bisa dipakai booking",
+      "Dewi sudah ditambahkan lewat admin.",
+      "Login Dewi → /hewan.php tambah hewan → /pesanan.php cek riwayat.",
+      "Dewi bisa menambah hewan dan memesan seperti klien hasil register.\nTidak ada perbedaan perlakuan akun."),
+
+  ]),
+
+  M("CRG", "Pencarian Global & Pengaturan Admin", "admin_cari.php · admin_pengaturan.php · proses_pengaturan.php · AdminModel", [
+
+    c("BB-CRG-01", "Pencarian dengan kata kunci kosong",
+      "Login admin.",
+      "GET /admin_cari.php (tanpa ?q=) atau q hanya spasi.",
+      "Redirect (302) ke /admin_dashboard.php.\nHalaman hasil tidak dirender."),
+
+    c("BB-CRG-02", "Cari klien berdasarkan email",
+      "Siti Rahma terdaftar dengan email siti@mail.com.",
+      "Ketik “siti@mail.com” di kotak cari topbar → Enter.",
+      "URL /admin_cari.php?q=siti%40mail.com.\nHeader “Hasil cari: “siti@mail.com” (1)” dan “1 klien · 0 layanan · 0 pesanan”.\nGrup Klien menampilkan Siti Rahma · ID #1 · siti@mail.com · 081234567890."),
+
+    c("BB-CRG-03", "Cari layanan dari deskripsi",
+      "Seed memiliki Grooming Reguler dan Grooming Express.",
+      "Cari “groom”.",
+      "Grup Layanan menampilkan 2 baris: Grooming Reguler dan Grooming Express.\nHeader menghitung minimal 2 layanan.\nJika sudah ada booking dengan layanan Grooming, grup Pesanan juga menampilkan booking tersebut karena pencarian ikut mencocokkan nama layanan."),
+
+    c("BB-CRG-04", "Cari pesanan berdasarkan ID",
+      "Booking #4 milik Budi.",
+      "Cari “4”.",
+      "Grup Pesanan memuat #4 (Grooming Express · Budi · Oren).\nJika ada nama/telepon mengandung “4”, baris itu juga muncul — pencarian ID bersifat tambahan (OR)."),
+
+    c("BB-CRG-05", "Pencarian tanpa hasil",
+      "Login admin.",
+      "Cari “zzzz”.",
+      "Header “Hasil cari: “zzzz” (0)”.\nKartu empty state: “Tidak ada hasil” + “Coba kata kunci lain — nama, email, telepon, layanan, atau kode pesanan.”\nTidak ada warning SQL."),
+
+    c("BB-CRG-06", "Pencarian tidak membedakan kapital",
+      "Siti Rahma terdaftar.",
+      "Cari “SITI”.",
+      "Hasil sama dengan “Siti”: grup Klien menampilkan Siti Rahma.\nKolasi DB case-insensitive."),
+
+    c("BB-CRG-07", "Karakter wildcard % dalam pencarian",
+      "Ada banyak klien/layanan/pesanan.",
+      "Cari “%”.",
+      "Perilaku aktual: “%” tidak di-escape sebagai wildcard LIKE, sehingga berpotensi menampilkan banyak/semua baris.\nCatat sebagai temuan; bandingkan jumlah hasil dengan total data."),
+
+    c("BB-CRG-08", "Percobaan SQL injection pada pencarian",
+      "Login admin.",
+      "Cari: ' OR 1=1 --",
+      "Tidak menampilkan seluruh data dan tidak ada error SQL.\nHasil biasanya “Tidak ada hasil” karena tanda kutip di-escape mysqli_real_escape_string.\nHalaman tetap 200."),
+
+    c("BB-CRG-09", "Percobaan XSS pada pencarian",
+      "Login admin.",
+      "Cari: <script>alert(1)<\/script>",
+      "Tidak ada dialog alert.\nTeks ditampilkan apa adanya/ter-escape di header “Hasil cari: “&lt;script&gt;...””.\nTidak ada HTML script yang dieksekusi."),
+
+    c("BB-CRG-10", "Halaman pengaturan menampilkan akun",
+      "Login admin Bimo_admin.",
+      "Buka /admin_pengaturan.php.",
+      "Form Profil Admin terisi: Bimo, Bimo_admin, 085242539520, Staff Perawatan.\nInfo Akun: ID #1, Role Admin, Jabatan Staff Perawatan.\nForm Ganti Password tersedia."),
+
+    c("BB-CRG-11", "Update profil admin valid",
+      "Login admin.",
+      "Nama lengkap: Bimo Saputra\nUsername: Bimo_admin\nTelepon: 081234567890\nJabatan: Administrator\nKlik “Simpan Profil”.",
+      "Alert: “Profil diperbarui.”\nNama di sidebar/topbar langsung “Bimo Saputra” tanpa logout.\nDB admin.nama_admin, no_telepon_admin, jabatan berubah."),
+
+    c("BB-CRG-12", "Update profil dengan field kosong",
+      "Login admin.",
+      "Nama: (kosong)\nUsername: Bimo_admin\nTelepon: 081234567890\nJabatan: Administrator",
+      "Alert: “Semua field profil wajib diisi.”\nData lama tidak berubah."),
+
+    c("BB-CRG-13", "Telepon profil 5 digit",
+      "Login admin.",
+      "Telepon: 12345\nField lain valid.",
+      "Alert: “Nomor telepon hanya angka (6-15 digit).”\nTidak ada update."),
+
+    c("BB-CRG-14", "Telepon profil 16 digit",
+      "Login admin.",
+      "Telepon: 0812345678901234 (16 digit)",
+      "Alert: “Nomor telepon hanya angka (6-15 digit).”\nTidak ada update."),
+
+    c("BB-CRG-15", "Telepon profil mengandung huruf (bypass HTML5)",
+      "Form memakai pattern; kirim langsung ke server.",
+      "no_telepon_admin=0812abc\nnama_admin=Bimo\nusername=Bimo_admin\njabatan=Administrator",
+      "Alert: “Nomor telepon hanya angka (6-15 digit).”\nTidak ada update."),
+
+    c("BB-CRG-16", "Username dipakai admin lain",
+      "Buat admin kedua via DB: username admin2.",
+      "Ubah profil admin #1 dengan username “admin2”.",
+      "Alert: “Username sudah dipakai admin lain.”\nProfil admin #1 tidak berubah; admin2 tetap ada."),
+
+    c("BB-CRG-17", "Username sendiri tetap boleh saat update",
+      "Login admin #1 dengan username Bimo_admin.",
+      "Ubah jabatan menjadi “Supervisor” tanpa mengubah username (tetap Bimo_admin).",
+      "Alert: “Profil diperbarui.”\nTidak dianggap duplikat karena pengecekan mengecualikan id sendiri."),
+
+    c("BB-CRG-18", "Ganti password dengan password lama salah",
+      "Login admin.",
+      "Password lama: salah123\nPassword baru: adminbaru1\nUlangi: adminbaru1",
+      "Alert: “Password lama salah.”\nPassword tidak berubah; login lama tetap berlaku."),
+
+    c("BB-CRG-19", "Password baru kurang dari 6 karakter",
+      "Login admin.",
+      "Password lama: Bimo_123\nPassword baru: 12345\nUlangi: 12345",
+      "Alert: “Password baru minimal 6 karakter.”\nTidak ada update."),
+
+    c("BB-CRG-20", "Konfirmasi password baru tidak sama",
+      "Login admin.",
+      "Password lama: Bimo_123\nPassword baru: adminbaru1\nUlangi: adminbaru2",
+      "Alert: “Konfirmasi password baru tidak sama.”\nTidak ada update."),
+
+    c("BB-CRG-21", "Ganti password berhasil &amp; login ulang",
+      "Login admin dengan Bimo_123.",
+      "Password lama: Bimo_123\nPassword baru: adminbaru1\nUlangi: adminbaru1\nKlik “Ganti Password”. Logout, login ulang.",
+      "Alert: “Password diganti.”\nLogin dengan Bimo_123 gagal.\nLogin dengan adminbaru1 berhasil masuk dashboard.\nKembalikan password ke Bimo_123 setelah uji."),
+
+    c("BB-CRG-22", "Aksi pengaturan tidak dikenal",
+      "Login admin.",
+      "POST /proses_pengaturan.php\naksi=hapus_semua",
+      "Alert: “Aksi tidak dikenal.” lalu /admin_pengaturan.php.\nTidak ada data berubah."),
+
+    c("BB-CRG-23", "Halaman bantuan admin",
+      "Login admin.",
+      "Buka /admin_bantuan.php.",
+      "Judul “Panduan Panel Admin”.\nTiga kartu: Konfirmasi pesanan, Kelola layanan &amp; klien, Arti status pesanan (P/K/S/B).\nLink “Buka pesanan →”, “Layanan →”, “Klien →” berfungsi."),
+
+  ]),
+  M("SEC", "Isolasi Data & Keamanan Input", "require_role() · kepemilikan data · escaping output · search", [
+
+    c("BB-SEC-01", "Klien A menghapus hewan klien B",
+      "Login Siti; Oren milik Budi.",
+      "GET /hapus_hewan.php?id=&lt;id_Oren&gt;.",
+      "Alert: “Gagal menghapus (mungkin hewan sudah dipakai pesanan).”\nOren tetap di DB dan tetap tampil untuk Budi."),
+
+    c("BB-SEC-02", "Klien A memesan dengan hewan klien B",
+      "Login Siti; id_peliharaan Oren milik Budi.",
+      "POST /proses_pesan.php\nid_pelayanan=1\nid_peliharaan=&lt;id_Oren&gt;\ntgl_masuk=2026-11-20\ntgl_keluar=2026-11-20",
+      "Alert: “Pilih hewan milik Anda sendiri.”\nTidak ada booking dengan hewan Oren atas nama Siti."),
+
+    c("BB-SEC-03", "Riwayat pesanan hanya milik sendiri",
+      "Siti punya 2 booking; Budi punya 1.",
+      "Login Siti → /pesanan.php; logout → login Budi → /pesanan.php.",
+      "Siti hanya melihat 2 pesanan miliknya.\nBudi hanya melihat 1 pesanan miliknya.\nTidak ada parameter URL yang bisa membuka pesanan klien lain."),
+
+    c("BB-SEC-04", "Klien membuka seluruh URL admin",
+      "Login Siti (role=klien).",
+      "Coba /admin_dashboard.php, /admin_pesanan.php, /admin_klien.php, /admin_layanan.php, /admin_aktivitas.php, /admin_pengaturan.php.",
+      "Semua mengarah ke /login.php (302).\nTidak ada data admin yang tampil."),
+
+    c("BB-SEC-05", "Admin membuka seluruh URL klien",
+      "Login admin.",
+      "Coba /index.php, /hewan.php, /pesan.php, /pesanan.php, /bantuan.php.",
+      "Semua mengarah ke /login.php (302).\nTidak ada halaman klien yang dirender untuk admin."),
+
+    c("BB-SEC-06", "XSS pada nama hewan",
+      "Login Siti.",
+      "Tambah hewan dengan nama: <script>alert(1)<\/script>\nJenis: Kucing, Ras: Uji, Umur: 1, Catatan: XSS.",
+      "Tidak ada dialog alert.\nNama tampil sebagai teks “&lt;script&gt;alert(1)&lt;/script&gt;” di kartu hewan dan halaman pesanan.\nView memakai htmlspecialchars."),
+
+    c("BB-SEC-07", "XSS pada catatan status admin",
+      "Login admin; ada booking Pending.",
+      "Ubah status dengan catatan: <img src=x onerror=alert(1)>\nLalu buka /admin_aktivitas.php.",
+      "Tidak ada request gambar/alert yang dieksekusi.\nCatatan tampil sebagai teks di dalam kutip “...” pada halaman aktivitas."),
+
+    c("BB-SEC-08", "SQL injection pada pencarian admin",
+      "Login admin.",
+      "Cari: ' OR 1=1 --",
+      "Tidak semua data tampil; tidak ada error SQL.\nHalaman hasil tetap 200 dengan empty state jika tidak ada kecocokan."),
+
+    c("BB-SEC-09", "SQL injection pada login",
+      "Belum login.",
+      "Username: ' OR '1'='1\nPassword: apa saja",
+      "Alert: “Login gagal! Username/Email atau Password Anda salah.”\nTidak ada session dibuat."),
+
+    c("BB-SEC-10", "Akses langsung file route internal",
+      "Tanpa login.",
+      "GET /routes/klien/index.php dan /routes/admin/admin_dashboard.php.",
+      "HTTP 403 Forbidden untuk keduanya.\nTidak ada eksekusi controller."),
+
+  ]),
+
+  M("UI", "Tampilan, Konten & Responsif", "app/Views/** · partials/footer.php · asset/js/admin.js", [
+
+    c("BB-UI-01", "Footer konsisten di semua halaman",
+      "Aplikasi berjalan.",
+      "Buka /login.php, /register.php, /syarat.php, /index.php (klien), /admin_dashboard.php (admin).",
+      "Semua menampilkan “© 2026 Petopia · Butuh bantuan? Hubungi tim”.\nLink “Hubungi tim” mengarah ke wa.me/6285242539520."),
+
+    c("BB-UI-02", "Tidak ada teks developer di UI",
+      "Aplikasi berjalan.",
+      "Cari teks “Tema #405d4d”, “var(--green)”, “TODO”, atau catatan internal di halaman yang terlihat pengguna.",
+      "Tidak ada teks developer/catatan kode yang tampil di UI.\nWarna tema tetap hijau #405d4d pada tombol/kartu."),
+
+    c("BB-UI-03", "Klaim keamanan di halaman login tidak menyesatkan",
+      "Belum login.",
+      "Buka /login.php, baca badge/trust dan teks di bawah tombol.",
+      "Tidak ada klaim “Enkripsi login”, “Data aman”, atau “Password terenkripsi”.\nYang tampil: “Bantuan via WhatsApp”, “Grooming · Vaksin · Penitipan”, “CS 08.00–20.00”."),
+
+    c("BB-UI-04", "Semua tautan WhatsApp",
+      "Aplikasi berjalan.",
+      "Klik tautan WA di login, beranda, katalog, bantuan klien, footer, dan bantuan admin (bila ada).",
+      "Semua membuka https://wa.me/6285242539520 di tab baru.\nTidak ada tautan WA yang salah nomor atau href=\"#\"."),
+
+    c("BB-UI-05", "Sidebar admin di layar kecil",
+      "Login admin; perkecil browser ke lebar &lt; 992px.",
+      "Klik tombol hamburger (menu) di topbar; klik overlay; lalu buka lagi dan tekan Escape.",
+      "Klik pertama: sidebar muncul dari kiri + overlay gelap.\nKlik overlay: sidebar tertutup.\nEscape juga menutup sidebar.\nTidak ada scroll horizontal halaman."),
+
+    c("BB-UI-06", "Menu admin aktif sesuai halaman",
+      "Login admin.",
+      "Buka /admin_dashboard.php, /admin_klien.php, /admin_layanan.php, /admin_pesanan.php, /admin_pengaturan.php, /admin_bantuan.php.",
+      "Menu yang sesuai berstatus aktif (warna/garis hijau) dan menu lain tidak aktif.\nTidak ada dua menu aktif sekaligus."),
+
+    c("BB-UI-07", "Navbar klien di layar kecil",
+      "Login klien; perkecil browser ke lebar ponsel.",
+      "Klik tombol hamburger navbar.",
+      "Menu Beranda, Layanan, Pesanan Saya, Bantuan, nama klien, dan tombol Keluar muncul/dapat diakses.\nHalaman tidak overflow horizontal."),
+
+    c("BB-UI-08", "Path aset mengikuti lokasi aplikasi",
+      "Akses lewat vhost dan subfolder.",
+      "Buka http://petopia.test/login.php dan http://localhost/petopia/login.php; lihat View Source pada link CSS/JS/gambar.",
+      "Vhost: /asset/css/auth.css, /asset/img/Petopia-01.png.\nSubfolder: /petopia/asset/css/auth.css, /petopia/asset/img/Petopia-01.png.\nTidak ada path yang diawali “/asset” saat di subfolder."),
+
+    c("BB-UI-09", "Judul tab tiap halaman",
+      "Login sesuai role.",
+      "Buka login, register, syarat, index, layanan, hewan, pesan, pesanan, bantuan, dashboard, pesanan admin, layanan admin, klien, aktivitas, pengaturan, bantuan admin.",
+      "Judul tab sesuai: “Login - Petopia”, “Daftar Akun - Petopia”, “Syarat &amp; Ketentuan - Petopia”, “Petopia - Beranda Klien”, “Layanan - Petopia”, dst.\nTidak ada halaman berjudul kosong/undefined."),
+
+    c("BB-UI-10", "Tabel admin tetap terbaca di layar kecil",
+      "Login admin; perkecil browser.",
+      "Buka /admin_pesanan.php, /admin_klien.php, /admin_layanan.php.",
+      "Tabel bisa di-scroll horizontal di dalam card (table-responsive); halaman utama tidak melebar.\nTombol aksi tetap bisa diklik."),
+
+    c("BB-UI-11", "S&amp;K bisa diakses dari beberapa pintu",
+      "Belum login / login klien.",
+      "Buka link S&amp;K di halaman register, halaman bantuan klien, dan halaman syarat langsung.",
+      "Semua membuka /syarat.php dengan isi 8 poin yang sama.\nTidak ada link S&amp;K yang menuju 404."),
+
+  ]),
+
+];
+
+/* ============================================================
+   SKENARIO END-TO-END
+   ============================================================ */
+const S = (id, judul, tujuan, pre, langkah, kasus) => ({ id, judul, tujuan, pre, langkah, kasus });
+
+const SCENARIOS = [
+
+  S("SK-01",
+    "Klien baru → booking → dikonfirmasi → selesai",
+    "Membuktikan alur utama produk dari register sampai pesanan selesai, termasuk perpindahan role klien ↔ admin.",
+    "Database seed, belum login. Tanggal uji 19–20 Nov 2026.",
+    [
+      ["Register klien", "Nama Siti Rahma · email siti@mail.com · telp 081234567890 · password siti123 · alamat Jl. Melati No. 10, Bandung", "Alert “Pendaftaran Berhasil! Silakan login.” lalu halaman login."],
+      ["Login klien", "siti@mail.com / siti123", "Masuk /index.php; navbar “Halo, Siti Rahma”."],
+      ["Tambah hewan", "Milo · Kucing · Persia · umur 2 · catatan Sehat", "Alert “Hewan berhasil ditambahkan!”; “Hewan saya (1)”."],
+      ["Pilih layanan", "Menu Layanan → kartu Grooming Reguler → “Pesan grooming”", "Form “Pesan: Grooming Reguler”, estimasi Rp 80.000."],
+      ["Buat pesanan", "Hewan Milo · tgl masuk 2026-11-20 · tgl keluar 2026-11-20", "Alert sukses Rp 80.000; /pesanan.php menampilkan kode #1, badge Pending."],
+      ["Pindah ke admin", "Logout → login Bimo_admin / Bimo_123", "Dashboard admin tampil; Perlu Konfirmasi = 1."],
+      ["Konfirmasi pesanan", "Di /admin_pesanan.php, #1 pilih Dikonfirmasi · catatan “Jadwal dikonfirmasi via WA”", "Alert “Status pesanan #1 → Dikonfirmasi.”; badge biru; 1 log baru."],
+      ["Selesaikan pesanan", "Di baris #1 pilih Selesai · catatan “Layanan selesai”", "Badge hijau; log bertambah; dashboard Pending = 0."],
+      ["Cek dari klien", "Logout admin → login Siti → /pesanan.php", "Pesanan #1 menampilkan badge Selesai dan total Rp 80.000."],
+      ["Cek audit", "Admin → /admin_aktivitas.php", "Dua log #1 (Dikonfirmasi, Selesai) tampil urut terbaru, dengan catatan dan nama admin."],
+    ],
+    ["AUT-06", "AUT-02", "HWN-01", "KLI-07", "KLI-12", "BKG-11", "BKG-18", "PSN-01", "PSN-07", "PSN-08", "PSN-14"]
+  ),
+
+  S("SK-02",
+    "Guard role & isolasi dua akun klien",
+    "Memastikan klien tidak bisa membuka area admin, menghapus/memesan hewan klien lain, dan tidak melihat data akun lain.",
+    "Dua klien terdaftar: Siti (Milo) dan Budi (Oren). Siapkan juga akun admin.",
+    [
+      ["Klien buka area admin", "Login Siti → buka /admin_dashboard.php", "Dialihkan ke /login.php; tidak ada data admin."],
+      ["Hapus hewan orang lain", "Siti membuka /hapus_hewan.php?id=&lt;id_Oren&gt;", "Alert gagal; Oren tetap ada."],
+      ["Booking hewan orang lain", "POST /proses_pesan.php dengan id_peliharaan Oren", "Alert “Pilih hewan milik Anda sendiri.”; tidak ada booking baru."],
+      ["Cek riwayat terisolasi", "Siti buka /pesanan.php, lalu Budi buka /pesanan.php", "Siti hanya melihat pesanannya; Budi hanya melihat pesanannya."],
+      ["Admin buka area klien", "Login admin → /hewan.php", "Dialihkan ke /login.php."],
+      ["Akses route internal", "GET /routes/klien/index.php", "HTTP 403."],
+      ["Hapus klien berelasi", "Admin coba hapus Siti (punya hewan/booking)", "Alert “Klien tidak bisa dihapus karena masih punya hewan/pesanan.”"],
+    ],
+    ["AKS-01", "AKS-02", "AKS-03", "AKS-04", "AKS-06", "SEC-01", "SEC-02", "SEC-03", "SEC-04", "SEC-05", "KLN-06", "KLN-07"]
+  ),
+
+  S("SK-03",
+    "Empat varian tarif: sesi, hari, minggu 7 hari, minggu 8 hari",
+    "Membandingkan estimasi di browser dengan total yang disimpan server pada semua satuan tagih.",
+    "Login Siti; Milo ada; layanan seed tersedia. Tanggal uji 19 Nov 2026.",
+    [
+      ["Sesi flat", "Grooming Reguler · 2026-11-20 → 2026-11-22", "Estimasi Rp 80.000; DB total_harga=80000 (tidak ×3)."],
+      ["Harian 3 hari", "Penitipan Harian · 2026-11-20 → 2026-11-22", "Estimasi “Rp 65.000 × 3 hari” = Rp 195.000; DB 195000."],
+      ["Mingguan 7 hari", "Pet Hotel · 2026-11-20 → 2026-11-26", "Estimasi “Rp 420.000 × 1 minggu (7 hari)” = Rp 420.000; DB 420000."],
+      ["Mingguan 8 hari", "Pet Hotel · 2026-11-20 → 2026-11-27", "Estimasi “Rp 420.000 × 2 minggu (8 hari)” = Rp 840.000; DB 840000."],
+      ["Cek total di klien", "Buka /pesanan.php", "Keempat kartu menampilkan total yang sama dengan estimasi dan DB."],
+      ["Cek total di admin", "Login admin → /admin_pesanan.php", "Kolom Total keempat baris sama; tidak ada selisih pembulatan."],
+    ],
+    ["BKG-11", "BKG-12", "BKG-13", "BKG-15", "BKG-16", "BKG-19", "PSN-06"]
+  ),
+
+  S("SK-04",
+    "Validasi input booking & jalur gagal",
+    "Memastikan semua input tidak valid ditolak dengan pesan yang tepat dan tidak meninggalkan data setengah jadi.",
+    "Login Siti; punya Milo. Untuk kasus tanpa admin, siapkan backup DB.",
+    [
+      ["Tanpa hewan", "Klien baru tanpa hewan → buka /pesan.php", "Alert “Tambahkan data hewan dulu...” → /hewan.php."],
+      ["Tanggal lampau", "tgl_masuk=2026-11-18", "Alert tanggal minimal hari ini."],
+      ["Tanggal keluar mundur", "masuk 2026-11-20, keluar 2026-11-19", "Alert tanggal tidak boleh mundur."],
+      ["Format salah", "masuk 19/11/2026", "Alert “Tanggal tidak valid.”"],
+      ["Layanan tidak ada", "id_pelayanan=9999", "Alert “Layanan tidak valid.”"],
+      ["Hewan orang lain", "id_peliharaan milik Budi", "Alert “Pilih hewan milik Anda sendiri.”"],
+      ["Admin kosong", "Backup, kosongkan tabel admin, lalu booking", "Alert “Belum ada admin penerima pesanan, hubungi Petopia.”; tidak ada insert. Pulihkan admin."],
+      ["Cek akhir", "SELECT COUNT(*) FROM booking", "Hanya booking valid yang bertambah; semua percobaan gagal tidak tercatat."],
+    ],
+    ["BKG-01", "BKG-02", "BKG-05", "BKG-06", "BKG-07", "BKG-08", "BKG-09", "BKG-10", "BKG-20", "SEC-02"]
+  ),
+
+  S("SK-05",
+    "Admin mengelola pesanan & membaca jejak aktivitas",
+    "Menguji perubahan status, catatan, no-op, filter aktivitas, dan konsistensi KPI.",
+    "Ada 4 booking Pending dari 2 klien; login admin.",
+    [
+      ["Konfirmasi #1", "P → K, catatan “Jadwal dikonfirmasi”", "Badge biru; log K; Pending 4 → 3."],
+      ["Selesaikan #1", "K → S, catatan “Selesai”", "Badge hijau; log S; log K tetap ada."],
+      ["Batalkan #2", "P → B, catatan “Klien batal”", "Badge merah; log B."],
+      ["No-op", "Ubah #1 ke S lagi", "Alert “Gagal ubah status (mungkin status sudah sama).”; jumlah log tidak bertambah."],
+      ["Status ilegal", "POST status_booking=X", "Alert “Status tidak valid.”; tidak ada perubahan."],
+      ["Filter aktivitas", "Buka ?status=K lalu ?status=B lalu ?status=Z", "K hanya log K; B hanya log B; Z menampilkan semua."],
+      ["Cek dashboard", "Buka /admin_dashboard.php", "Pending sesuai sisa; 4 aktivitas terbaru tampil; bell sesuai Pending."],
+    ],
+    ["PSN-01", "PSN-02", "PSN-04", "PSN-07", "PSN-08", "PSN-09", "PSN-10", "PSN-11", "PSN-15", "PSN-16", "PSN-17"]
+  ),
+
+  S("SK-06",
+    "Admin CRUD layanan dari katalog sampai proteksi hapus",
+    "Menambah, mengubah, dan menghapus layanan; memastikan layanan yang sudah dipakai pesanan tidak bisa dihapus.",
+    "Login admin; minimal satu layanan sudah dipakai booking (Grooming Reguler).",
+    [
+      ["Tambah layanan", "Grooming Kucing · Mandi + potong kuku · 75000", "Alert “Layanan tersimpan.”; jumlah 7; katalog menampilkan “Mulai Rp 75k”."],
+      ["Cek meta generik", "Buka katalog klien", "CTA “Pesan”, tanpa durasi, hanya muncul di filter Semua."],
+      ["Edit layanan", "Ubah harga Grooming Kucing menjadi 55000", "Alert tersimpan; katalog “Mulai Rp 55k”; booking baru memakai 55.000."],
+      ["Hapus layanan baru", "Klik hapus Grooming Kucing", "Alert “Layanan dihapus.”; kartu hilang."],
+      ["Tolak hapus terpakai", "Klik hapus Grooming Reguler", "Alert “Layanan tidak bisa dihapus karena sudah dipakai pesanan.”; data utuh."],
+      ["Validasi", "Tambah nama kosong / harga 0 / harga negatif", "Alert “Nama layanan wajib diisi dan harga harus lebih dari 0.”"],
+    ],
+    ["LAY-01", "LAY-02", "LAY-03", "LAY-04", "LAY-06", "LAY-08", "LAY-09", "LAY-10", "LAY-12", "LAY-13", "KLI-16"]
+  ),
+
+  S("SK-07",
+    "Admin mengelola klien manual & statistiknya",
+    "Menguji penambahan klien oleh admin, email unik, statistik hewan/pesanan, dan proteksi hapus.",
+    "Login admin; Siti punya hewan + pesanan; Budi punya hewan + pesanan.",
+    [
+      ["Tambah klien", "Dewi Lestari · dewi@mail.com · dewi123 · 081377788899 · Jl. Anggrek No. 3", "Alert “Klien ditambahkan.”; baris “0 hewan · 0 pesanan”."],
+      ["Login klien baru", "Logout admin → login dewi@mail.com / dewi123", "Berhasil masuk beranda klien."],
+      ["Cek statistik", "Kembali admin → /admin_klien.php", "Siti “1 hewan · 1+ pesanan”; Budi “1 hewan · 1 pesanan”; Dewi “0 · 0”."],
+      ["Hapus klien bersih", "Hapus Dewi", "Alert “Klien dihapus.”; baris hilang."],
+      ["Tolak hapus berelasi", "Hapus Siti dan Budi", "Alert “Klien tidak bisa dihapus karena masih punya hewan/pesanan.”"],
+      ["Email duplikat", "Tambah klien dengan siti@mail.com", "Alert “Email sudah terdaftar.”; tidak ada insert."],
+    ],
+    ["KLN-01", "KLN-03", "KLN-05", "KLN-06", "KLN-07", "KLN-09", "KLN-11", "AUT-02"]
+  ),
+
+  S("SK-08",
+    "Pencarian global admin: klien, layanan, pesanan",
+    "Memastikan satu kotak cari menemukan tiga jenis data, termasuk kode pesanan, serta aman terhadap input aneh.",
+    "Data uji lengkap; login admin.",
+    [
+      ["Cari klien", "q=siti@mail.com", "Grup Klien: Siti Rahma; header “1 klien · 0 layanan · 0 pesanan”."],
+      ["Cari layanan", "q=groom", "Grup Layanan: Grooming Reguler + Grooming Express (2)."],
+      ["Cari kode pesanan", "q=4", "Grup Pesanan memuat #4; klik panah menuju /admin_pesanan.php."],
+      ["Tanpa hasil", "q=zzzz", "“Tidak ada hasil” + saran kata kunci."],
+      ["SQL injection", "q=' OR 1=1 --", "Tidak semua data tampil; tidak ada error SQL."],
+      ["XSS", "q=&lt;script&gt;alert(1)&lt;/script&gt;", "Tidak ada alert; teks ter-escape."],
+      ["Kosong", "GET /admin_cari.php tanpa q", "Redirect ke dashboard."],
+    ],
+    ["CRG-01", "CRG-02", "CRG-03", "CRG-04", "CRG-05", "CRG-08", "CRG-09", "SEC-08"]
+  ),
+
+  S("SK-09",
+    "Pengaturan admin: profil, username, dan password",
+    "Menguji validasi profil (telepon & username unik) dan alur ganti password sampai login ulang.",
+    "Login admin Bimo_admin / Bimo_123; backup DB. Siapkan admin kedua username admin2 untuk uji duplikat.",
+    [
+      ["Update profil valid", "Bimo Saputra · Bimo_admin · 081234567890 · Administrator", "Alert “Profil diperbarui.”; sidebar langsung berubah."],
+      ["Telepon invalid", "12345 lalu 0812abc", "Alert “Nomor telepon hanya angka (6-15 digit).”; tidak update."],
+      ["Username duplikat", "Ubah username menjadi admin2", "Alert “Username sudah dipakai admin lain.”"],
+      ["Password lama salah", "Lama salah123 · baru adminbaru1", "Alert “Password lama salah.”"],
+      ["Password baru pendek", "Lama Bimo_123 · baru 12345", "Alert “Password baru minimal 6 karakter.”"],
+      ["Konfirmasi beda", "Baru adminbaru1 · ulang adminbaru2", "Alert “Konfirmasi password baru tidak sama.”"],
+      ["Ganti password sukses", "Lama Bimo_123 · baru adminbaru1 · ulang sama", "Alert “Password diganti.”; login lama gagal, login baru berhasil."],
+      ["Pulihkan", "Ganti kembali ke Bimo_123", "Login dengan Bimo_123 berhasil."],
+    ],
+    ["CRG-10", "CRG-11", "CRG-13", "CRG-15", "CRG-16", "CRG-18", "CRG-19", "CRG-20", "CRG-21", "AUT-01"]
+  ),
+
+  S("SK-10",
+    "UI, konten publik, routing, dan responsif",
+    "Memastikan halaman publik, footer, tautan bantuan, judul tab, serta layout mobile berjalan tanpa error.",
+    "Aplikasi berjalan; siapkan sesi klien dan admin.",
+    [
+      ["Halaman publik", "Buka /login.php, /register.php, /syarat.php", "Semua 200; isi dan footer tampil."],
+      ["URL salah", "Buka /tidak-ada.php", "HTTP 404, bukan halaman kosong."],
+      ["Route internal", "Buka /routes/auth/login.php", "HTTP 403."],
+      ["Footer & WA", "Cek footer di 5 halaman; klik “Hubungi tim”", "Teks “© 2026 Petopia · Butuh bantuan? Hubungi tim”; WA nomor 6285242539520."],
+      ["Sidebar mobile", "Kecilkan layar admin → hamburger → overlay → Escape", "Sidebar buka/tutup mulus; tidak ada scroll horizontal."],
+      ["Navbar klien mobile", "Kecilkan layar klien → hamburger", "Menu klien bisa diakses; halaman tidak melebar."],
+      ["Aset subfolder", "Buka localhost/petopia/login.php, lihat source", "CSS/gambar memakai prefix /petopia/asset/...; tidak ada 404 aset."],
+    ],
+    ["AKS-06", "AKS-07", "AKS-08", "UI-01", "UI-03", "UI-04", "UI-05", "UI-07", "UI-08", "UI-09"]
+  ),
+
+];
+/* ============================================================
+   ENGINE LEMBAR UJI
+   ============================================================ */
+const KEY = "petopia.blackbox.v1";
+const ALL = MODULES.flatMap(m => m.kasus.map(k => ({ ...k, modul: m.kode, modulNama: m.nama })));
+const HAY = {};
+ALL.forEach(k => {
+  HAY[k.id] = [k.id, k.modul, k.modulNama, k.nama, k.pre, k.input, k.out].join(" ").toLowerCase();
+});
+
+let state = { status: {}, notes: {}, scenario: {} };
+try {
+  const raw = localStorage.getItem(KEY);
+  if (raw) {
+    const p = JSON.parse(raw);
+    state.status = p.status || {};
+    state.notes = p.notes || {};
+    state.scenario = p.scenario || {};
+  }
+} catch (e) { /* localStorage rusak/private mode: jalan tanpa simpan */ }
+
+let filter = "all";
+let query = "";
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+function tx(s) {
+  return String(s == null ? "" : s).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function attr(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function statusOf(id) { return state.status[id] || "belum"; }
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+}
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), 1900);
+}
+
+/* ---------- build sidebar ---------- */
+function buildNav() {
+  $("#navSkenario").innerHTML = SCENARIOS.map(s => `
+    <a class="navitem" href="#${s.id}">
+      <span class="dot" data-skdot="${s.id}"></span>
+      <span>${tx(s.id)} · ${tx(s.judul.split("→")[0].trim())}</span>
+    </a>`).join("");
+
+  $("#navList").innerHTML = MODULES.map(m => `
+    <a class="navitem" href="#mod-${m.kode}">
+      <span class="dot" data-mdot="${m.kode}"></span>
+      <span>${tx(m.kode)} · ${tx(m.nama)}</span>
+      <span class="cnt" data-mcnt="${m.kode}">0/${m.kasus.length}</span>
+    </a>`).join("");
+
+  $("#covChips").innerHTML = `
+    <span class="chip"><b>${ALL.length}</b> kasus uji</span>
+    <span class="chip"><b>${SCENARIOS.length}</b> skenario</span>
+    <span class="chip"><b>${MODULES.length}</b> modul</span>
+    <span class="chip">input → output konkret</span>`;
+}
+
+/* ---------- build cases ---------- */
+function buildCases() {
+  $("#modules").innerHTML = MODULES.map(m => `
+    <section class="card module" id="mod-${m.kode}" data-mod="${m.kode}">
+      <div class="module-head">
+        <h3>${tx(m.kode)} — ${tx(m.nama)}</h3>
+        <span class="file">${tx(m.file)}</span>
+        <div class="mprog"><span data-mtxt="${m.kode}">0/${m.kasus.length}</span><div class="progress"><i data-mbar="${m.kode}"></i></div></div>
+      </div>
+      <div class="case-head">
+        <div>ID</div><div>Fitur &amp; prasyarat</div><div>Input / data uji</div><div>Output yang diharapkan</div><div>Status &amp; hasil aktual</div>
+      </div>
+      ${m.kasus.map(k => {
+        const st = statusOf(k.id);
+        const note = state.notes[k.id] || "";
+        return `
+        <article class="case" id="${k.id}" data-status="${st}" data-mod="${m.kode}">
+          <div data-l="ID"><span class="id">${k.id}</span></div>
+          <div data-l="Fitur">
+            <div class="name">${tx(k.nama)}</div>
+            <div class="pre"><b>Prasyarat:</b> ${tx(k.pre)}</div>
+          </div>
+          <div class="io" data-l="Input">
+            <span class="tag">Input / data uji</span>
+            <pre>${tx(k.input)}</pre>
+          </div>
+          <div class="io out" data-l="Output">
+            <span class="tag">Output yang diharapkan</span>
+            <pre>${tx(k.out)}</pre>
+          </div>
+          <div class="status" data-l="Status">
+            <div class="seg" data-seg="${k.id}">
+              <button type="button" data-s="belum" class="${st === "belum" ? "on" : ""}">Belum</button>
+              <button type="button" data-s="lulus" class="${st === "lulus" ? "on" : ""}">Lulus</button>
+              <button type="button" data-s="gagal" class="${st === "gagal" ? "on" : ""}">Gagal</button>
+            </div>
+            <input class="note" data-note="${k.id}" value="${attr(note)}" placeholder="Hasil aktual / catatan..." aria-label="Catatan ${k.id}">
+          </div>
+        </article>`;
+      }).join("")}
+    </section>`).join("");
+}
+
+/* ---------- build scenarios ---------- */
+function buildScenarios() {
+  $("#scenarioList").innerHTML = SCENARIOS.map(s => {
+    const done = !!state.scenario[s.id];
+    return `
+    <details class="scenario ${done ? "done" : ""}" id="${s.id}" ${done ? "open" : ""}>
+      <summary>
+        <span class="sid">${s.id}</span>
+        <span class="stitle">${tx(s.judul)}</span>
+        <span class="scfile">${s.langkah.length} langkah</span>
+        <label class="done" onclick="event.stopPropagation()"><input type="checkbox" data-sk="${s.id}" ${done ? "checked" : ""}> Selesai</label>
+      </summary>
+      <div class="sc-body">
+        <p class="sc-tujuan">${tx(s.tujuan)}</p>
+        <div class="sc-meta"><b>Prasyarat:</b> ${tx(s.pre)}</div>
+        <table class="steps">
+          <thead><tr><th>#</th><th>Aksi</th><th>Data / input</th><th>Hasil yang diharapkan</th></tr></thead>
+          <tbody>
+            ${s.langkah.map((l, i) => `
+              <tr><td>${i + 1}</td><td>${tx(l[0])}</td><td>${tx(l[1])}</td><td>${tx(l[2])}</td></tr>`).join("")}
+          </tbody>
+        </table>
+        <div class="sc-rel">Kasus terkait:
+          ${s.kasus.map(k => `<a class="relchip" href="#BB-${tx(k)}">BB-${tx(k)}</a>`).join("")}
+        </div>
+      </div>
+    </details>`;
+  }).join("");
+}
+
+/* ---------- stats ---------- */
+function updateStats() {
+  const total = ALL.length;
+  let lulus = 0, gagal = 0, belum = 0;
+  ALL.forEach(k => {
+    const s = statusOf(k.id);
+    if (s === "lulus") lulus++;
+    else if (s === "gagal") gagal++;
+    else belum++;
+  });
+  const done = lulus + gagal;
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  $("#totalTop").textContent = total;
+  $("#totalSk").textContent = SCENARIOS.length;
+  $("#statLulus").textContent = lulus + " lulus";
+  $("#statGagal").textContent = gagal + " gagal";
+  $("#statBelum").textContent = belum + " belum";
+  $("#gaugePct").textContent = pct + "%";
+  $("#barTop").style.width = pct + "%";
+  $("#barGauge").style.width = pct + "%";
+
+  $("#nAll").textContent = total;
+  $("#nBelum").textContent = belum;
+  $("#nLulus").textContent = lulus;
+  $("#nGagal").textContent = gagal;
+
+  MODULES.forEach(m => {
+    const ks = m.kasus;
+    const d = ks.filter(k => statusOf(k.id) !== "belum").length;
+    const l = ks.filter(k => statusOf(k.id) === "lulus").length;
+    const g = ks.filter(k => statusOf(k.id) === "gagal").length;
+    const txt = document.querySelector(`[data-mtxt="${m.kode}"]`);
+    const bar = document.querySelector(`[data-mbar="${m.kode}"]`);
+    const cnt = document.querySelector(`[data-mcnt="${m.kode}"]`);
+    if (txt) txt.textContent = `${d}/${ks.length}`;
+    if (bar) bar.style.width = (ks.length ? Math.round(d / ks.length * 100) : 0) + "%";
+    if (cnt) cnt.textContent = `${l}/${ks.length}`;
+    const dot = document.querySelector(`[data-mdot="${m.kode}"]`);
+    if (dot) {
+      dot.classList.toggle("done", g === 0 && d === ks.length && ks.length > 0);
+      dot.classList.toggle("fail", g > 0);
+    }
+  });
+
+  const skDone = SCENARIOS.filter(s => state.scenario[s.id]).length;
+  $("#statSk").textContent = `${skDone}/${SCENARIOS.length} skenario`;
+  $("#skDoneTxt").textContent = `${skDone}/${SCENARIOS.length} selesai`;
+  $("#skBar").style.width = (SCENARIOS.length ? Math.round(skDone / SCENARIOS.length * 100) : 0) + "%";
+  SCENARIOS.forEach(s => {
+    const dot = document.querySelector(`[data-skdot="${s.id}"]`);
+    if (dot) {
+      dot.classList.toggle("done", !!state.scenario[s.id]);
+      dot.classList.remove("fail");
+    }
+  });
+}
+
+/* ---------- filter ---------- */
+function applyFilter() {
+  $$("#modules .module").forEach(sec => {
+    let visible = 0;
+    Array.from(sec.querySelectorAll(".case")).forEach(el => {
+      const st = statusOf(el.id);
+      const matchStatus = filter === "all" || st === filter;
+      const matchQuery = !query || HAY[el.id].includes(query);
+      const show = matchStatus && matchQuery;
+      el.hidden = !show;
+      if (show) visible++;
+    });
+    sec.hidden = visible === 0;
+  });
+}
+
+/* ---------- refresh one case ---------- */
+function refreshCase(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const st = statusOf(id);
+  el.dataset.status = st;
+  el.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.s === st));
+}
+
+/* ---------- summary ---------- */
+function summaryText() {
+  const total = ALL.length;
+  const lulus = ALL.filter(k => statusOf(k.id) === "lulus").length;
+  const gagal = ALL.filter(k => statusOf(k.id) === "gagal").length;
+  const belum = total - lulus - gagal;
+  const skDone = SCENARIOS.filter(s => state.scenario[s.id]).length;
+  const lines = [];
+  lines.push("PETOPIA — BLACKBOX TEST SUMMARY");
+  lines.push("Tanggal: " + new Date().toLocaleString("id-ID"));
+  lines.push(`Kasus: ${total} · Lulus: ${lulus} · Gagal: ${gagal} · Belum: ${belum}`);
+  lines.push(`Skenario selesai: ${skDone}/${SCENARIOS.length}`);
+  lines.push("");
+  lines.push("PER MODUL:");
+  MODULES.forEach(m => {
+    const l = m.kasus.filter(k => statusOf(k.id) === "lulus").length;
+    const g = m.kasus.filter(k => statusOf(k.id) === "gagal").length;
+    const b = m.kasus.length - l - g;
+    lines.push(`- ${m.kode} ${m.nama}: ${l}/${m.kasus.length} lulus, ${g} gagal, ${b} belum`);
+  });
+  const fails = ALL.filter(k => statusOf(k.id) === "gagal").map(k => k.id);
+  const notRun = ALL.filter(k => statusOf(k.id) === "belum").map(k => k.id);
+  if (fails.length) lines.push("", "GAGAL: " + fails.join(", "));
+  if (notRun.length) lines.push("", "BELUM: " + notRun.join(", "));
+  return lines.join("\n");
+}
+
+/* ---------- events ---------- */
+function bind() {
+  $("#modules").addEventListener("click", (e) => {
+    const btn = e.target.closest(".seg button");
+    if (!btn) return;
+    const id = btn.closest(".seg").dataset.seg;
+    const st = btn.dataset.s;
+    if (st === "belum") delete state.status[id];
+    else state.status[id] = st;
+    save();
+    refreshCase(id);
+    updateStats();
+    applyFilter();
+  });
+
+  $("#modules").addEventListener("input", (e) => {
+    const inp = e.target.closest("[data-note]");
+    if (!inp) return;
+    const id = inp.dataset.note;
+    if (inp.value.trim() === "") delete state.notes[id];
+    else state.notes[id] = inp.value;
+    save();
+  });
+
+  $("#scenarioList").addEventListener("change", (e) => {
+    const cb = e.target.closest("[data-sk]");
+    if (!cb) return;
+    const id = cb.dataset.sk;
+    state.scenario[id] = cb.checked;
+    if (!cb.checked) delete state.scenario[id];
+    save();
+    const det = document.getElementById(id);
+    if (det) det.classList.toggle("done", cb.checked);
+    updateStats();
+  });
+
+  $("#filters").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-f]");
+    if (!b) return;
+    filter = b.dataset.f;
+    $$("#filters .filter").forEach(x => x.classList.toggle("active", x === b));
+    applyFilter();
+  });
+
+  $("#q").addEventListener("input", (e) => {
+    query = e.target.value.trim().toLowerCase();
+    applyFilter();
+  });
+
+  $("#btnPrint").addEventListener("click", () => window.print());
+
+  $("#btnCopy").addEventListener("click", async () => {
+    const txt = summaryText();
+    try {
+      await navigator.clipboard.writeText(txt);
+      toast("Ringkasan disalin ke clipboard.");
+    } catch (err) {
+      const ta = document.createElement("textarea");
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+      toast("Ringkasan disalin.");
+    }
+  });
+
+  $("#btnExport").addEventListener("click", () => {
+    const data = {
+      app: "Petopia",
+      type: "blackbox-test-result",
+      generatedAt: new Date().toISOString(),
+      summary: {
+        total: ALL.length,
+        lulus: ALL.filter(k => statusOf(k.id) === "lulus").length,
+        gagal: ALL.filter(k => statusOf(k.id) === "gagal").length,
+        belum: ALL.filter(k => statusOf(k.id) === "belum").length,
+        skenarioSelesai: SCENARIOS.filter(s => state.scenario[s.id]).length,
+        totalSkenario: SCENARIOS.length,
+      },
+      cases: ALL.map(k => ({ id: k.id, modul: k.modul, nama: k.nama, status: statusOf(k.id), catatan: state.notes[k.id] || "" })),
+      scenarios: SCENARIOS.map(s => ({ id: s.id, judul: s.judul, selesai: !!state.scenario[s.id] })),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "petopia-blackbox-hasil.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast("JSON hasil diunduh.");
+  });
+
+  $("#btnReset").addEventListener("click", () => {
+    if (!confirm("Reset semua status, catatan, dan skenario? Tindakan ini tidak bisa dibatalkan.")) return;
+    state = { status: {}, notes: {}, scenario: {} };
+    save();
+    $$("#modules .case").forEach(el => {
+      refreshCase(el.id);
+      const inp = el.querySelector("[data-note]");
+      if (inp) inp.value = "";
+    });
+    $$("#scenarioList details.scenario").forEach(d => {
+      d.classList.remove("done");
+      const cb = d.querySelector("[data-sk]");
+      if (cb) cb.checked = false;
+    });
+    updateStats();
+    applyFilter();
+    toast("Semua status direset.");
+  });
+}
+
+/* ---------- init ---------- */
+buildNav();
+buildCases();
+buildScenarios();
+bind();
+updateStats();
+applyFilter();
+
+
+
+
+
+
+</script>
+</body>
+</html>

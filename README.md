@@ -138,7 +138,7 @@ browser (JS), sehingga angka yang dilihat klien selalu sama dengan yang tersimpa
 | UI | Bootstrap 5.3 (CDN) + Bootstrap Icons + Google Fonts (Outfit & Inter) |
 | Pola | MVC sederhana: `routes/` → `Controllers/` → `Models/` → `Views/` |
 | Web server | Apache + `mod_rewrite` (Laragon) |
-| Pengujian | Lembar uji whitebox manual (`whitebox.html`) |
+| Pengujian | Lembar uji whitebox &amp; blackbox manual (`whitebox.html`, `blackbox.html`) |
 
 ---
 
@@ -240,6 +240,7 @@ petopia/
 │   └── admin/                  # 14 route admin
 ├── .htaccess                   # peta URL publik → routes/
 ├── whitebox.html               # lembar uji whitebox (123 kasus)
+├── blackbox.html               # lembar uji blackbox (163 kasus + 10 skenario)
 └── README.md
 ```
 
@@ -419,6 +420,25 @@ Yang dicakup antara lain:
 Fitur halaman: status **Belum / Lulus / Gagal**, catatan hasil, filter, pencarian,
 progres per modul, ekspor JSON, dan mode cetak. Status tersimpan otomatis di
 `localStorage` browser.
+
+### Pengujian Blackbox
+
+Lembar uji **`blackbox.html`** menguji perilaku aplikasi dari sisi pengguna:
+**input konkret → output yang diharapkan**, bukan jalur kode. Isinya:
+
+- **10 skenario end-to-end** — alur klien baru → booking → konfirmasi → selesai,
+  guard role & isolasi dua akun, empat varian tarif, validasi booking,
+  pengelolaan pesanan/layanan/klien, pencarian global, pengaturan admin, dan UI publik.
+- **163 kasus uji** dalam **11 modul** (AUT, AKS, KLI, HWN, BKG, PSN, LAY, KLN,
+  CRG, SEC, UI) — setiap kasus memuat prasyarat, data input, output yang diharapkan,
+  status Lulus/Gagal, dan kolom hasil aktual.
+- Data akun, hewan, layanan, dan booking contoh yang siap dipakai, plus query SQL
+  untuk memverifikasi bahwa output di layar sama dengan isi database.
+
+Buka: **http://petopia.test/blackbox.html** (atau `localhost/petopia/blackbox.html`).
+
+> Beberapa kasus sengaja menguji jalur gagal/destruktif (mengosongkan tabel admin,
+> menghapus data, mengganti password). Jalankan di database salinan dan backup dulu.
 
 ---
 
